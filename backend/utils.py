@@ -3,7 +3,6 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-import pandas as pd
 import io
 import uuid
 from datetime import datetime
@@ -70,33 +69,27 @@ def generate_pdf(content, session_id):
     return generate_legal_document(content, session_id, "Generated Document")
 
 def generate_table(content, session_id):
-    """Generate HTML table from content"""
+    """Generate HTML table from content without pandas"""
     try:
         # Try to extract table-like data from content
         lines = content.split('\n')
-        table_data = []
+        table_rows = []
         
         for line in lines:
-            if '|' in line or '\t' in line:
-                # Looks like table data
-                row = [cell.strip() for cell in line.split('|') if cell.strip()]
-                if row:
-                    table_data.append(row)
+            if '|' in line:
+                # Table data with pipes
+                cells = [cell.strip() for cell in line.split('|') if cell.strip()]
+                if cells:
+                    table_rows.append(cells)
         
-        if not table_data:
+        if not table_rows:
             # Create simple table from content
-            table_data = [
+            table_rows = [
                 ['Item', 'Description'],
                 ['Content', content[:100] + '...']
             ]
         
-        # Create DataFrame
-        if len(table_data) > 1:
-            df = pd.DataFrame(table_data[1:], columns=table_data[0])
-        else:
-            df = pd.DataFrame(table_data)
-        
-        # Convert to styled HTML
+        # Generate HTML table manually
         html_table = f"""
         <html>
         <head>
@@ -112,7 +105,19 @@ def generate_table(content, session_id):
         <body>
             <h1>Legal Chat Bot - Table Output</h1>
             <p>Generated on: {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</p>
-            {df.to_html(index=False, escape=False)}
+            <table>
+        """
+        
+        # Add table rows
+        for i, row in enumerate(table_rows):
+            tag = 'th' if i == 0 else 'td'
+            html_table += "<tr>"
+            for cell in row:
+                html_table += f"<{tag}>{cell}</{tag}>"
+            html_table += "</tr>"
+        
+        html_table += """
+            </table>
         </body>
         </html>
         """
