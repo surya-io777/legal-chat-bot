@@ -9,7 +9,11 @@ class ChatService:
     def __init__(self):
         self.dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
         self.bedrock_runtime = boto3.client('bedrock-runtime', region_name='us-east-1')
-        self.bedrock_agent = boto3.client('bedrock-agent-runtime', region_name='us-east-1')
+        try:
+            self.bedrock_agent = boto3.client('bedrock-agent-runtime', region_name='us-east-1')
+        except Exception as e:
+            print(f"Warning: bedrock-agent-runtime not available: {e}")
+            self.bedrock_agent = None
         self.table = self.dynamodb.Table('Legal-bot-chat-history')
         self.knowledge_base_id = 'GL3HPG5NUR'
         
@@ -34,6 +38,10 @@ class ChatService:
     
     def retrieve_from_kb(self, query):
         """Retrieve relevant documents from Knowledge Base"""
+        if not self.bedrock_agent:
+            print("Bedrock agent not available, using fallback context")
+            return f"Legal context for: {query}", []
+            
         try:
             response = self.bedrock_agent.retrieve(
                 knowledgeBaseId=self.knowledge_base_id,
@@ -53,7 +61,7 @@ class ChatService:
             
         except Exception as e:
             print(f"KB retrieval error: {e}")
-            return "", []
+            return f"Legal context for: {query}", []
     
     def detect_document_request(self, message):
         """Detect if user wants document generation"""
