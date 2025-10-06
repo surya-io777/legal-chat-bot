@@ -16,75 +16,108 @@ function MessageBubble({ message }) {
       );
     }
     
-    // Clean content and format for better readability
-    let cleanContent = content
-      .replace(/\*\*/g, '') // Remove ** formatting
-      .replace(/###/g, '') // Remove ### headers
-      .replace(/##/g, '') // Remove ## headers
-      .replace(/#/g, ''); // Remove # headers
-    
-    // Split into paragraphs and format
-    const paragraphs = cleanContent.split('\n\n');
+    // Process content line by line for better structure
+    const lines = content.split('\n');
     const formattedContent = [];
     
-    paragraphs.forEach((paragraph, index) => {
-      const trimmedParagraph = paragraph.trim();
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
       
-      if (!trimmedParagraph) return;
+      if (!trimmedLine) {
+        formattedContent.push(<Box key={index} sx={{ height: '8px' }} />);
+        return;
+      }
       
-      // Check if it's a numbered list item
-      if (/^\d+\./.test(trimmedParagraph)) {
+      // Main document titles (all caps, centered, bold)
+      if (trimmedLine === trimmedLine.toUpperCase() && 
+          (trimmedLine.includes('AGREEMENT') || 
+           trimmedLine.includes('CONTRACT') || 
+           trimmedLine.includes('PETITION') ||
+           trimmedLine.includes('SEPARATION') ||
+           trimmedLine.includes('RECITALS'))) {
         formattedContent.push(
-          <Typography key={index} variant="body1" sx={{ 
-            mb: 1,
-            pl: 2,
-            fontWeight: 'bold'
-          }}>
-            {trimmedParagraph}
-          </Typography>
-        );
-      }
-      // Check if it's a bullet point
-      else if (trimmedParagraph.startsWith('•') || trimmedParagraph.startsWith('-')) {
-        formattedContent.push(
-          <Typography key={index} variant="body1" sx={{ 
-            mb: 0.5,
-            pl: 2
-          }}>
-            {trimmedParagraph}
-          </Typography>
-        );
-      }
-      // Check if it's a title (all caps or contains AGREEMENT, etc.)
-      else if (trimmedParagraph === trimmedParagraph.toUpperCase() || 
-               trimmedParagraph.includes('AGREEMENT') || 
-               trimmedParagraph.includes('RECITALS')) {
-        formattedContent.push(
-          <Typography key={index} variant="h6" sx={{ 
+          <Typography key={index} variant="h5" sx={{ 
             fontWeight: 'bold', 
-            mt: 2, 
+            mt: 3, 
+            mb: 2,
+            textAlign: 'center',
+            textDecoration: 'underline'
+          }}>
+            {trimmedLine}
+          </Typography>
+        );
+      }
+      // Section headers (WHEREAS, NOW THEREFORE, etc.)
+      else if (trimmedLine.startsWith('WHEREAS') || 
+               trimmedLine.startsWith('NOW THEREFORE') ||
+               trimmedLine.startsWith('IT IS AGREED') ||
+               trimmedLine.includes('WITNESSETH')) {
+        formattedContent.push(
+          <Typography key={index} variant="body1" sx={{ 
+            fontWeight: 'bold',
+            mt: 2,
             mb: 1,
+            textIndent: '20px'
+          }}>
+            {trimmedLine}
+          </Typography>
+        );
+      }
+      // Numbered clauses (1., 2., etc.)
+      else if (/^\d+\./.test(trimmedLine)) {
+        formattedContent.push(
+          <Typography key={index} variant="body1" sx={{ 
+            fontWeight: 'bold',
+            mt: 1.5,
+            mb: 0.5,
+            pl: 1
+          }}>
+            {trimmedLine}
+          </Typography>
+        );
+      }
+      // Sub-clauses (a., b., etc.)
+      else if (/^[a-z]\)/.test(trimmedLine) || /^\([a-z]\)/.test(trimmedLine)) {
+        formattedContent.push(
+          <Typography key={index} variant="body1" sx={{ 
+            mt: 0.5,
+            mb: 0.5,
+            pl: 3,
+            fontStyle: 'italic'
+          }}>
+            {trimmedLine}
+          </Typography>
+        );
+      }
+      // Names and important terms (in quotes or all caps)
+      else if (trimmedLine.includes('"') || 
+               (trimmedLine === trimmedLine.toUpperCase() && trimmedLine.length < 50)) {
+        formattedContent.push(
+          <Typography key={index} variant="body1" sx={{ 
+            fontWeight: 'bold',
+            mb: 0.5,
             textAlign: 'center'
           }}>
-            {trimmedParagraph}
+            {trimmedLine}
           </Typography>
         );
       }
-      // Regular paragraph
+      // Regular paragraphs
       else {
         formattedContent.push(
           <Typography key={index} variant="body1" sx={{ 
-            mb: 1,
+            mb: 0.8,
             lineHeight: 1.6,
-            textAlign: 'justify'
+            textAlign: 'justify',
+            textIndent: '20px'
           }}>
-            {trimmedParagraph}
+            {trimmedLine}
           </Typography>
         );
       }
     });
     
-    return <Box>{formattedContent}</Box>;
+    return <Box sx={{ p: 1 }}>{formattedContent}</Box>;
   };
   
   const handleDownload = (file) => {
@@ -107,22 +140,50 @@ function MessageBubble({ message }) {
   };
   
   const handleAutoDownload = (content, timestamp) => {
+    // Clean content for PDF
     const cleanContent = content
       .replace(/\*\*/g, '')
       .replace(/###/g, '')
       .replace(/##/g, '')
       .replace(/#/g, '')
-      .replace(/SRIS Juris Support states:/g, '');
+      .replace(/SRIS Juris Support states:/g, '')
+      .trim();
     
-    const blob = new Blob([cleanContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `legal_document_${new Date(timestamp).getTime()}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Create proper PDF using jsPDF
+    try {
+      import('jspdf').then(({ jsPDF }) => {
+        const doc = new jsPDF();
+        const pageHeight = doc.internal.pageSize.height;
+        const margin = 20;
+        let yPosition = margin;
+        
+        // Split content into lines
+        const lines = doc.splitTextToSize(cleanContent, 170);
+        
+        lines.forEach((line) => {
+          if (yPosition > pageHeight - margin) {
+            doc.addPage();
+            yPosition = margin;
+          }
+          doc.text(line, margin, yPosition);
+          yPosition += 7;
+        });
+        
+        const filename = `legal_document_${new Date(timestamp).getTime()}.pdf`;
+        doc.save(filename);
+      });
+    } catch (error) {
+      // Fallback: create text file with PDF extension
+      const blob = new Blob([cleanContent], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `legal_document_${new Date(timestamp).getTime()}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   };
 
   return (
@@ -151,18 +212,7 @@ function MessageBubble({ message }) {
         
         {formatLegalDocument(message.message_content, isUser)}
         
-        {message.sources && message.sources.length > 0 && (
-          <Box sx={{ mt: 1 }}>
-            <Typography variant="caption" sx={{ fontWeight: 'bold' }}>
-              Sources:
-            </Typography>
-            {message.sources.map((source, index) => (
-              <Typography key={index} variant="caption" sx={{ display: 'block', ml: 1 }}>
-                • {source.split('/').pop()}
-              </Typography>
-            ))}
-          </Box>
-        )}
+
         
         {/* Only show download for document generation requests */}
         {!isUser && message.message_content && message.message_content.length > 1000 && (
