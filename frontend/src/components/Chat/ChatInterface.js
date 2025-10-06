@@ -222,6 +222,126 @@ function ChatInterface({ messages, onSendMessage, models }) {
               <MessageBubble key={index} message={msg} />
             ))
           )}
+          
+          {/* Loading indicator appears after user message */}
+          {loading && (
+            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
+              <Box sx={{ 
+                p: 3, 
+                maxWidth: '70%',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                borderRadius: 3,
+                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+                position: 'relative',
+                overflow: 'hidden',
+                '&::before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: '-100%',
+                  width: '100%',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+                  animation: 'shimmer 2s infinite',
+                  '@keyframes shimmer': {
+                    '0%': { left: '-100%' },
+                    '100%': { left: '100%' }
+                  }
+                }
+              }}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  gap: 1,
+                  zIndex: 1
+                }}>
+                  <Box 
+                    sx={{ 
+                      width: 6, 
+                      height: 24, 
+                      bgcolor: 'rgba(255,255,255,0.9)',
+                      borderRadius: 1,
+                      animation: 'wave1 1.2s infinite ease-in-out',
+                      '@keyframes wave1': {
+                        '0%, 40%, 100%': { transform: 'scaleY(0.4)' },
+                        '20%': { transform: 'scaleY(1.0)' }
+                      }
+                    }} 
+                  />
+                  <Box 
+                    sx={{ 
+                      width: 6, 
+                      height: 24, 
+                      bgcolor: 'rgba(255,255,255,0.8)',
+                      borderRadius: 1,
+                      animation: 'wave2 1.2s infinite ease-in-out',
+                      animationDelay: '-1.1s',
+                      '@keyframes wave2': {
+                        '0%, 40%, 100%': { transform: 'scaleY(0.4)' },
+                        '20%': { transform: 'scaleY(1.0)' }
+                      }
+                    }} 
+                  />
+                  <Box 
+                    sx={{ 
+                      width: 6, 
+                      height: 24, 
+                      bgcolor: 'rgba(255,255,255,0.9)',
+                      borderRadius: 1,
+                      animation: 'wave3 1.2s infinite ease-in-out',
+                      animationDelay: '-1.0s',
+                      '@keyframes wave3': {
+                        '0%, 40%, 100%': { transform: 'scaleY(0.4)' },
+                        '20%': { transform: 'scaleY(1.0)' }
+                      }
+                    }} 
+                  />
+                  <Box 
+                    sx={{ 
+                      width: 6, 
+                      height: 24, 
+                      bgcolor: 'rgba(255,255,255,0.7)',
+                      borderRadius: 1,
+                      animation: 'wave4 1.2s infinite ease-in-out',
+                      animationDelay: '-0.9s',
+                      '@keyframes wave4': {
+                        '0%, 40%, 100%': { transform: 'scaleY(0.4)' },
+                        '20%': { transform: 'scaleY(1.0)' }
+                      }
+                    }} 
+                  />
+                  <Box 
+                    sx={{ 
+                      width: 6, 
+                      height: 24, 
+                      bgcolor: 'rgba(255,255,255,0.8)',
+                      borderRadius: 1,
+                      animation: 'wave5 1.2s infinite ease-in-out',
+                      animationDelay: '-0.8s',
+                      '@keyframes wave5': {
+                        '0%, 40%, 100%': { transform: 'scaleY(0.4)' },
+                        '20%': { transform: 'scaleY(1.0)' }
+                      }
+                    }} 
+                  />
+                </Box>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: 'white',
+                    fontWeight: 500,
+                    textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                    zIndex: 1
+                  }}
+                >
+                  {loadingStatus}
+                </Typography>
+              </Box>
+            </Box>
+          )}
           <div ref={messagesEndRef} />
         </Box>
       </Box>
@@ -293,9 +413,17 @@ function ChatInterface({ messages, onSendMessage, models }) {
           {loading ? (
             <Button 
               onClick={handleStopGeneration}
-              variant="contained"
-              color="error"
-              sx={{ minWidth: 'auto', px: 2 }}
+              variant="outlined"
+              sx={{ 
+                minWidth: 'auto', 
+                px: 2,
+                color: 'grey.500',
+                borderColor: 'grey.300',
+                '&:hover': {
+                  borderColor: 'grey.400',
+                  bgcolor: 'grey.50'
+                }
+              }}
             >
               ⏹️
             </Button>
@@ -311,27 +439,7 @@ function ChatInterface({ messages, onSendMessage, models }) {
           )}
         </Box>
         
-        {loading && (
-          <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box 
-              sx={{ 
-                width: 16, 
-                height: 16, 
-                border: '2px solid #1976d2', 
-                borderTop: '2px solid transparent', 
-                borderRadius: '50%', 
-                animation: 'spin 1s linear infinite',
-                '@keyframes spin': {
-                  '0%': { transform: 'rotate(0deg)' },
-                  '100%': { transform: 'rotate(360deg)' }
-                }
-              }} 
-            />
-            <Typography variant="caption" color="primary" sx={{ fontWeight: 'bold' }}>
-              {loadingStatus}
-            </Typography>
-          </Box>
-        )}
+
         
         {userInstructions && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
