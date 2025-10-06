@@ -162,20 +162,17 @@ CRITICAL FORMATTING RULES:
         if request_type == "analysis":
             combined_prompt = f"""{base_instructions}
 
-DEEP ANALYSIS INSTRUCTIONS:
-- Perform comprehensive, detailed analysis of all uploaded content
-- Extract key insights, patterns, and important information
-- Compare different sections, clauses, or documents if multiple files
-- Identify legal implications, risks, and opportunities
-- Provide detailed breakdown of structure, content, and meaning
-- Include specific quotes and references from the documents
-- Analyze legal language, terms, and their significance
-- Compare with standard legal practices and requirements
-- Highlight any unusual clauses, missing elements, or concerns
-- Provide actionable insights and recommendations
-- Be thorough and comprehensive in your analysis
+ANALYSIS INSTRUCTIONS:
+- Analyze the uploaded content and provide key insights only
+- Focus on important legal points, risks, and recommendations
+- DO NOT repeat or quote large sections of the original document
+- Summarize findings in clear, concise points
+- Highlight only the most critical issues and opportunities
+- Provide actionable recommendations without lengthy explanations
+- Keep analysis focused and to the point
+- Avoid reproducing document content in the response
 
-Provide deep analysis:"""
+Provide concise analysis with key insights:"""
         elif request_type == "document":
             combined_prompt = f"""{base_instructions}
 
@@ -203,10 +200,12 @@ Generate a well-structured table:"""
             combined_prompt = f"""{base_instructions}
 
 RESPONSE INSTRUCTIONS:
-- Provide direct answers without extra analysis
-- Use simple, clear formatting
-- NO introductory phrases or commentary
-- Keep responses concise and to the point
+- Provide direct, specific answers to legal questions
+- Give concrete, actionable advice and recommendations
+- Include relevant legal citations and precedents
+- Address practical implications and next steps
+- Use clear, professional legal language
+- Provide specific examples when helpful
 
 Response:"""
 
@@ -299,7 +298,7 @@ Response:"""
                 )
                 file_list = [f["filename"] for f in uploaded_files]
                 if request_type == "analysis":
-                    message += f"\n\nFILES FOR DEEP ANALYSIS: {', '.join(file_list)}\nPerform comprehensive analysis including content breakdown, legal implications, comparisons, and detailed insights."
+                    message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide key insights and recommendations only. Do not repeat document content."
                 else:
                     message += f"\n\nFiles to analyze: {', '.join(file_list)}"
 
