@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'http://44.204.88.183:5000/api';
 
 const getAuthHeaders = () => ({
   headers: {
