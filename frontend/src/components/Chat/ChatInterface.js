@@ -71,13 +71,13 @@ function ChatInterface({ messages, onSendMessage, models }) {
     try {
       // Set loading status based on content
       if (uploadedFiles.length > 0) {
-        setLoadingStatus('🔍 Analyzing uploaded files...');
+        setLoadingStatus('Analyzing uploaded files...');
       } else if (inputMessage.toLowerCase().includes('pdf') || inputMessage.toLowerCase().includes('document')) {
-        setLoadingStatus('📄 Generating document...');
+        setLoadingStatus('Generating document...');
       } else if (inputMessage.toLowerCase().includes('table')) {
-        setLoadingStatus('📊 Creating table...');
+        setLoadingStatus('Creating table...');
       } else {
-        setLoadingStatus('🤖 Generating response...');
+        setLoadingStatus('Generating response...');
       }
       
       // Create message with file context
@@ -223,122 +223,50 @@ function ChatInterface({ messages, onSendMessage, models }) {
             ))
           )}
           
-          {/* Loading indicator appears after user message */}
+          {/* Simple loading indicator */}
           {loading && (
             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-start' }}>
               <Box sx={{ 
-                p: 3, 
+                p: 2, 
                 maxWidth: '70%',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: 3,
-                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.2)',
+                bgcolor: 'grey.100',
+                borderRadius: 2,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 2,
-                position: 'relative',
-                overflow: 'hidden',
-                '&::before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: '-100%',
-                  width: '100%',
-                  height: '100%',
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-                  animation: 'shimmer 2s infinite',
-                  '@keyframes shimmer': {
-                    '0%': { left: '-100%' },
-                    '100%': { left: '100%' }
-                  }
-                }
+                gap: 1
               }}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center',
-                  gap: 1,
-                  zIndex: 1
-                }}>
-                  <Box 
-                    sx={{ 
-                      width: 6, 
-                      height: 24, 
-                      bgcolor: 'rgba(255,255,255,0.9)',
-                      borderRadius: 1,
-                      animation: 'wave1 1.2s infinite ease-in-out',
-                      '@keyframes wave1': {
-                        '0%, 40%, 100%': { transform: 'scaleY(0.4)' },
-                        '20%': { transform: 'scaleY(1.0)' }
-                      }
-                    }} 
-                  />
-                  <Box 
-                    sx={{ 
-                      width: 6, 
-                      height: 24, 
-                      bgcolor: 'rgba(255,255,255,0.8)',
-                      borderRadius: 1,
-                      animation: 'wave2 1.2s infinite ease-in-out',
-                      animationDelay: '-1.1s',
-                      '@keyframes wave2': {
-                        '0%, 40%, 100%': { transform: 'scaleY(0.4)' },
-                        '20%': { transform: 'scaleY(1.0)' }
-                      }
-                    }} 
-                  />
-                  <Box 
-                    sx={{ 
-                      width: 6, 
-                      height: 24, 
-                      bgcolor: 'rgba(255,255,255,0.9)',
-                      borderRadius: 1,
-                      animation: 'wave3 1.2s infinite ease-in-out',
-                      animationDelay: '-1.0s',
-                      '@keyframes wave3': {
-                        '0%, 40%, 100%': { transform: 'scaleY(0.4)' },
-                        '20%': { transform: 'scaleY(1.0)' }
-                      }
-                    }} 
-                  />
-                  <Box 
-                    sx={{ 
-                      width: 6, 
-                      height: 24, 
-                      bgcolor: 'rgba(255,255,255,0.7)',
-                      borderRadius: 1,
-                      animation: 'wave4 1.2s infinite ease-in-out',
-                      animationDelay: '-0.9s',
-                      '@keyframes wave4': {
-                        '0%, 40%, 100%': { transform: 'scaleY(0.4)' },
-                        '20%': { transform: 'scaleY(1.0)' }
-                      }
-                    }} 
-                  />
-                  <Box 
-                    sx={{ 
-                      width: 6, 
-                      height: 24, 
-                      bgcolor: 'rgba(255,255,255,0.8)',
-                      borderRadius: 1,
-                      animation: 'wave5 1.2s infinite ease-in-out',
-                      animationDelay: '-0.8s',
-                      '@keyframes wave5': {
-                        '0%, 40%, 100%': { transform: 'scaleY(0.4)' },
-                        '20%': { transform: 'scaleY(1.0)' }
-                      }
-                    }} 
-                  />
-                </Box>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: 'white',
-                    fontWeight: 500,
-                    textShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                    zIndex: 1
-                  }}
-                >
-                  {loadingStatus}
+                <Typography variant="body2" color="text.secondary">
+                  {loadingStatus.replace(/[🔍📄📊🤖]/g, '').trim()}
                 </Typography>
+                <Box sx={{ display: 'flex', gap: 0.3 }}>
+                  <Box sx={{ 
+                    width: 4, 
+                    height: 4, 
+                    bgcolor: 'text.secondary',
+                    borderRadius: '50%',
+                    animation: 'blink 1.4s infinite both',
+                    '@keyframes blink': {
+                      '0%, 80%, 100%': { opacity: 0 },
+                      '40%': { opacity: 1 }
+                    }
+                  }} />
+                  <Box sx={{ 
+                    width: 4, 
+                    height: 4, 
+                    bgcolor: 'text.secondary',
+                    borderRadius: '50%',
+                    animation: 'blink 1.4s infinite both',
+                    animationDelay: '0.2s'
+                  }} />
+                  <Box sx={{ 
+                    width: 4, 
+                    height: 4, 
+                    bgcolor: 'text.secondary',
+                    borderRadius: '50%',
+                    animation: 'blink 1.4s infinite both',
+                    animationDelay: '0.4s'
+                  }} />
+                </Box>
               </Box>
             </Box>
           )}

@@ -16,67 +16,70 @@ function MessageBubble({ message }) {
       );
     }
     
-    // Format legal document structure
-    const lines = content.split('\n');
+    // Clean content and format for better readability
+    let cleanContent = content
+      .replace(/\*\*/g, '') // Remove ** formatting
+      .replace(/###/g, '') // Remove ### headers
+      .replace(/##/g, '') // Remove ## headers
+      .replace(/#/g, ''); // Remove # headers
+    
+    // Split into paragraphs and format
+    const paragraphs = cleanContent.split('\n\n');
     const formattedContent = [];
     
-    lines.forEach((line, index) => {
-      const trimmedLine = line.trim();
+    paragraphs.forEach((paragraph, index) => {
+      const trimmedParagraph = paragraph.trim();
       
-      if (!trimmedLine) {
-        formattedContent.push(<Box key={index} sx={{ height: '8px' }} />);
-        return;
+      if (!trimmedParagraph) return;
+      
+      // Check if it's a numbered list item
+      if (/^\d+\./.test(trimmedParagraph)) {
+        formattedContent.push(
+          <Typography key={index} variant="body1" sx={{ 
+            mb: 1,
+            pl: 2,
+            fontWeight: 'bold'
+          }}>
+            {trimmedParagraph}
+          </Typography>
+        );
       }
-      
-      // Handle markdown-style headers
-      if (trimmedLine.startsWith('###')) {
-        formattedContent.push(
-          <Typography key={index} variant="h4" sx={{ 
-            fontWeight: 'bold', 
-            mt: 2, 
-            mb: 1,
-            textAlign: 'center',
-            textDecoration: 'underline',
-            color: 'primary.main'
-          }}>
-            {trimmedLine.replace(/^###\s*/, '')}
-          </Typography>
-        );
-      } else if (trimmedLine.startsWith('##')) {
-        formattedContent.push(
-          <Typography key={index} variant="h5" sx={{ 
-            fontWeight: 'bold', 
-            mt: 2, 
-            mb: 1,
-            textAlign: 'center',
-            color: 'text.primary'
-          }}>
-            {trimmedLine.replace(/^##\s*/, '')}
-          </Typography>
-        );
-      } else if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
-        // Bold headers
-        formattedContent.push(
-          <Typography key={index} variant="h6" sx={{ 
-            fontWeight: 'bold', 
-            mt: 1.5, 
-            mb: 0.5,
-            textAlign: 'center',
-            color: 'text.secondary'
-          }}>
-            {trimmedLine.replace(/\*\*/g, '')}
-          </Typography>
-        );
-      } else {
-        // Regular paragraph with bold text support
-        const formattedText = trimmedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      // Check if it's a bullet point
+      else if (trimmedParagraph.startsWith('•') || trimmedParagraph.startsWith('-')) {
         formattedContent.push(
           <Typography key={index} variant="body1" sx={{ 
             mb: 0.5,
-            textAlign: trimmedLine.includes('AGREEMENT') || trimmedLine.includes('RECITALS') ? 'center' : 'left',
-            fontWeight: trimmedLine.includes('WHEREAS') || trimmedLine.includes('NOW THEREFORE') ? 'bold' : 'normal',
-            lineHeight: 1.6
-          }} dangerouslySetInnerHTML={{ __html: formattedText }} />
+            pl: 2
+          }}>
+            {trimmedParagraph}
+          </Typography>
+        );
+      }
+      // Check if it's a title (all caps or contains AGREEMENT, etc.)
+      else if (trimmedParagraph === trimmedParagraph.toUpperCase() || 
+               trimmedParagraph.includes('AGREEMENT') || 
+               trimmedParagraph.includes('RECITALS')) {
+        formattedContent.push(
+          <Typography key={index} variant="h6" sx={{ 
+            fontWeight: 'bold', 
+            mt: 2, 
+            mb: 1,
+            textAlign: 'center'
+          }}>
+            {trimmedParagraph}
+          </Typography>
+        );
+      }
+      // Regular paragraph
+      else {
+        formattedContent.push(
+          <Typography key={index} variant="body1" sx={{ 
+            mb: 1,
+            lineHeight: 1.6,
+            textAlign: 'justify'
+          }}>
+            {trimmedParagraph}
+          </Typography>
         );
       }
     });
@@ -108,13 +111,14 @@ function MessageBubble({ message }) {
       .replace(/\*\*/g, '')
       .replace(/###/g, '')
       .replace(/##/g, '')
-      .replace(/#/g, '');
+      .replace(/#/g, '')
+      .replace(/SRIS Juris Support states:/g, '');
     
     const blob = new Blob([cleanContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `legal_document_${new Date(timestamp).getTime()}.txt`;
+    a.download = `legal_document_${new Date(timestamp).getTime()}.pdf`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -160,8 +164,13 @@ function MessageBubble({ message }) {
           </Box>
         )}
         
-        {/* Auto-generate download for long responses */}
-        {!isUser && message.message_content && message.message_content.length > 500 && (
+        {/* Only show download for document generation requests */}
+        {!isUser && message.message_content && message.message_content.length > 1000 && (
+          message.message_content.toLowerCase().includes('agreement') ||
+          message.message_content.toLowerCase().includes('contract') ||
+          message.message_content.toLowerCase().includes('petition') ||
+          message.message_content.toLowerCase().includes('document')
+        ) && (
           <Box sx={{ mt: 2 }}>
             <Button
               variant="contained"
