@@ -173,7 +173,25 @@ Response:"""
         try:
             if model_name == 'gemini-pro':
                 model = genai.GenerativeModel(model_id)
-                response = model.generate_content(combined_prompt)
+                
+                # Check if there are uploaded files for Gemini
+                if hasattr(self, '_current_uploaded_files') and self._current_uploaded_files:
+                    print(f"🔥 GEMINI: Processing with {len(self._current_uploaded_files)} files")
+                    
+                    # Prepare content with files for Gemini
+                    content_parts = [combined_prompt]
+                    
+                    for file_info in self._current_uploaded_files:
+                        if file_info['filename'].lower().endswith('.pdf'):
+                            print(f"📄 Adding PDF file to Gemini: {file_info['filename']}")
+                            # Upload file to Gemini
+                            uploaded_file = genai.upload_file(file_info['path'])
+                            content_parts.append(uploaded_file)
+                    
+                    response = model.generate_content(content_parts)
+                else:
+                    response = model.generate_content(combined_prompt)
+                    
                 result_text = response.text
                 print(f"✅ GEMINI RESPONSE LENGTH: {len(result_text)} characters")
                 return result_text
@@ -246,10 +264,13 @@ Response:"""
         )
         
         try:
-            # Process uploaded files
+            # Store uploaded files for Gemini direct access
+            self._current_uploaded_files = uploaded_files
+            
+            # Process uploaded files (only for non-Gemini models)
             file_context = ""
-            if uploaded_files:
-                print(f"🔍 Processing {len(uploaded_files)} uploaded files")
+            if uploaded_files and model_name != 'gemini-pro':
+                print(f"🔍 Processing {len(uploaded_files)} uploaded files for {model_name}")
                 file_context = self.process_uploaded_files(uploaded_files)
                 print(f"🔍 Raw file_context result: '{file_context[:500]}...'")
                 if file_context.strip():
@@ -259,6 +280,9 @@ Response:"""
                     print("❌ No file content extracted - files may be empty or unreadable")
                     # Add explicit message about file processing failure
                     message += f"\n\nNote: {len(uploaded_files)} files were uploaded but content could not be extracted. Files: {[f['filename'] for f in uploaded_files]}"
+            elif uploaded_files and model_name == 'gemini-pro':
+                print(f"🔥 GEMINI: Will process {len(uploaded_files)} files directly")
+                message += f"\n\nFiles to analyze: {[f['filename'] for f in uploaded_files]}"
             
             # Retrieve from Knowledge Base
             kb_context, sources = self.retrieve_from_kb(message)
@@ -381,10 +405,16 @@ Response:"""
                             file_contents.append(f"📄 FILE: {filename}\n\nCONTENT:\n{clean_text[:4000]}...")
                             print(f"✅ Successfully extracted {len(clean_text)} characters from {filename}")
                         else:
-                            # Try to get file info even if no text
-                            file_size = os.path.getsize(filepath)
-                            file_contents.append(f"📄 FILE: {filename}\nSTATUS: PDF file detected ({file_size} bytes) but no readable text found. This may be a scanned document or image-based PDF.")
-                            print(f"⚠️ PDF {filename} has no extractable text ({file_size} bytes)")
+                            # Try OCR for image-based PDFs
+                            print(f"🔍 No text found, attempting OCR for {filename}")
+                            ocr_text = self.extract_pdf_with_ocr(filepath, filename)
+                            if ocr_text.strip():
+                                file_contents.append(f"📄 FILE: {filename} (OCR)\n\nCONTENT:\n{ocr_text[:4000]}...")
+                                print(f"✅ OCR extracted {len(ocr_text)} characters from {filename}")
+                            else:
+                                file_size = os.path.getsize(filepath)
+                                file_contents.append(f"📄 FILE: {filename}\nSTATUS: PDF file detected ({file_size} bytes) but no readable text found even with OCR.")
+                                print(f"⚠️ PDF {filename} has no extractable text even with OCR ({file_size} bytes)")
                                 
                     except Exception as pdf_error:
                         print(f"❌ PDF processing error for {filename}: {pdf_error}")
@@ -407,6 +437,35 @@ Response:"""
         print(f"📋 FINAL PROCESSED CONTENT LENGTH: {len(result)} characters")
         print(f"📋 CONTENT PREVIEW: {result[:200]}...")
         return result
+    
+    def extract_pdf_with_ocr(self, filepath, filename):
+        """Extract text from image-based PDFs using OCR"""
+        try:
+            # Method 1: Try pytesseract + pdf2image
+            try:
+                import pytesseract
+                from pdf2image import convert_from_path
+                from PIL import Image
+                
+                print(f"🔍 Converting PDF to images for OCR: {filename}")
+                pages = convert_from_path(filepath, dpi=200)
+                
+                ocr_text = ""
+                for i, page in enumerate(pages):
+                    print(f"🔍 Processing page {i+1} with OCR")
+                    page_text = pytesseract.image_to_string(page)
+                    if page_text.strip():
+                        ocr_text += f"\n--- Page {i+1} (OCR) ---\n{page_text}\n"
+                
+                return ocr_text
+                
+            except ImportError as e:
+                print(f"⚠️ OCR libraries not available: {e}")
+                return ""
+                
+        except Exception as e:
+            print(f"❌ OCR processing error: {e}")
+            return ""
     
     def get_available_models(self):
         return [
