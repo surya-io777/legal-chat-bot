@@ -5,6 +5,10 @@ import uuid
 from utils import generate_pdf, generate_table, generate_legal_document
 import os
 import google.generativeai as genai
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 class ChatService:
     def __init__(self):
@@ -21,8 +25,11 @@ class ChatService:
         # Load your custom prompt
         self.system_prompt = self.load_prompt_file()
         
-        # Configure Gemini
-        genai.configure(api_key="AIzaSyCEKP2j4eHv1LLKvKm6GACh6s7-K67YYR8")
+        # Configure Gemini with environment variable
+        gemini_api_key = os.getenv('GEMINI_API_KEY')
+        if not gemini_api_key:
+            raise ValueError("GEMINI_API_KEY environment variable not set")
+        genai.configure(api_key=gemini_api_key)
         
         # Available models - Only Gemini 2.5 Pro
         self.models = {
