@@ -220,8 +220,11 @@ function MessageBubble({ message }) {
         
 
         
-        {/* Only show download when output_files exist */}
-        {!isUser && message.output_files && message.output_files.length > 0 && (
+        {/* Show download for long responses or when PDF keywords detected */}
+        {!isUser && (message.output_files?.length > 0 || 
+                    message.message_content?.length > 1000 || 
+                    message.message_content?.toLowerCase().includes('pdf') ||
+                    message.request_type === 'document') && (
           <Box sx={{ mt: 2 }}>
             <Button
               variant="contained"
@@ -237,7 +240,7 @@ function MessageBubble({ message }) {
                 }
               }}
             >
-              Download Document
+              Download PDF
             </Button>
           </Box>
         )}

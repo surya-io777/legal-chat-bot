@@ -87,7 +87,8 @@ class ChatService:
             'prepare contract', 'draft contract', 'create legal document',
             'make agreement', 'write document', 'compose document',
             'give it as output', 'output as pdf', 'pdf file',
-            'save as pdf', 'download pdf', 'export pdf', 'generate output'
+            'save as pdf', 'download pdf', 'export pdf', 'generate output',
+            'in pdf', 'as pdf', 'pdf format', 'output in pdf'
         ]
         
         table_keywords = [
@@ -109,7 +110,7 @@ class ChatService:
             print(f"🔥 CHAT REQUEST: {message_lower}")
             return 'chat'
     
-    def generate_response(self, user_query, context, model_name='claude-sonnet-4', request_type='chat', user_instructions=""):
+    def generate_response(self, user_query, context, model_name='claude-sonnet-4', request_type='chat', user_instructions="", chat_history=""):
         """Generate response using selected model and your prompt"""
         
         model_id = self.models.get(model_name, self.models['gemini-pro'])
@@ -120,6 +121,9 @@ You are a professional legal AI assistant. Provide comprehensive legal analysis 
 
 Knowledge Base Context (if available):
 {context}
+
+Chat History (for context continuity):
+{chat_history}
 
 User Instructions: {user_instructions}
 
@@ -132,6 +136,7 @@ Formatting Guidelines:
 - Avoid markdown formatting symbols
 - Use proper legal document structure when generating documents
 - Be comprehensive and precise in your analysis
+- Maintain context from previous messages in this conversation
 """
         
         if request_type == 'document':
@@ -213,6 +218,9 @@ Response:"""
         # Detect request type
         request_type = self.detect_document_request(message)
         
+        # Get chat history for context
+        chat_history = self.get_chat_history(user_id, session_id)
+        
         # Save user message
         self.table.put_item(
             Item={
@@ -241,8 +249,8 @@ Response:"""
             # Retrieve from Knowledge Base
             kb_context, sources = self.retrieve_from_kb(message)
             
-            # Generate response with your prompt
-            bot_response = self.generate_response(message, kb_context, model_name, request_type, user_instructions)
+            # Generate response with your prompt and chat history
+            bot_response = self.generate_response(message, kb_context, model_name, request_type, user_instructions, chat_history)
             
             # Save assistant response
             assistant_timestamp = datetime.now().isoformat()
@@ -263,10 +271,10 @@ Response:"""
             # Generate output files based on request type
             output_files = []
             
-            # Generate downloadable files ONLY when explicitly requested
-            if request_type == 'document':
+            # Generate downloadable files when explicitly requested OR when response is long
+            if request_type == 'document' or len(bot_response) > 1000:
                 try:
-                    print(f"🔥 GENERATING PDF for document request")
+                    print(f"🔥 GENERATING PDF for document request (type: {request_type}, length: {len(bot_response)})")
                     pdf_content = self.generate_pdf_content(bot_response, session_id, message)
                     if pdf_content:
                         output_files.append({
@@ -536,3 +544,34 @@ Response:"""
             return {'success': True, 'messages': response['Items']}
         except Exception as e:
             return {'success': False, 'error': str(e)}
+    
+    def get_chat_history(self, user_id, session_id, limit=10):
+        """Get recent chat history for context"""
+        try:
+            response = self.table.query(
+                KeyConditionExpression='user_id = :uid',
+                FilterExpression='session_id = :sid',
+                ExpressionAttributeValues={
+                    ':uid': user_id,
+                    ':sid': session_id
+                },
+                ScanIndexForward=False,
+                Limit=limit * 2  # Get more to account for user/assistant pairs
+            )
+            
+            messages = response['Items']
+            if not messages:
+                return ""
+            
+            # Format recent messages for context
+            history_text = "\nRecent conversation:\n"
+            for msg in reversed(messages[-limit:]):
+                role = "User" if msg['message_type'] == 'user' else "Assistant"
+                content = msg['message_content'][:200] + "..." if len(msg['message_content']) > 200 else msg['message_content']
+                history_text += f"{role}: {content}\n"
+            
+            return history_text
+            
+        except Exception as e:
+            print(f"Error getting chat history: {e}")
+            return ""
