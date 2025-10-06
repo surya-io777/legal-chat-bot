@@ -144,7 +144,7 @@ class ChatService:
         kb_context_text = f"\nKnowledge Base Context:\n{context}" if context.strip() else ""
         
         base_instructions = f"""
-You are a professional legal AI assistant.{kb_context_text}
+You are a professional legal AI assistant. Provide comprehensive legal analysis and advice.{kb_context_text}
 
 Chat History (for context continuity):
 {chat_history}
@@ -153,40 +153,45 @@ User Instructions: {user_instructions}
 
 User Request: {user_query}
 
-CRITICAL FORMATTING RULES:
-- DO NOT add "SRIS Juris Support states:" or any introductory text
-- DO NOT add analysis, explanations, or extra sentences
-- PRESERVE exact formatting, spacing, and structure from input files
-- Keep all CAPITAL LETTERS, bold text, and indentation exactly as provided
-- NO markdown symbols (**, ##, *, etc.)
-- Output ONLY the requested content without additional commentary
+Formatting Guidelines:
+- Start responses with "SRIS Juris Support states:"
+- Use clear, professional language
+- Structure responses with numbered lists and bullet points
+- Avoid markdown formatting symbols
+- Use proper legal document structure when generating documents
+- Be comprehensive and precise in your analysis
+- Maintain context from previous messages in this conversation
 """
 
         if request_type == "analysis":
             combined_prompt = f"""{base_instructions}
 
-ANALYSIS INSTRUCTIONS:
-- Analyze the uploaded files directly using your multimodal capabilities
-- Provide key legal insights, risks, and recommendations
-- Focus on critical issues and actionable advice
-- Compare documents if multiple files are provided
-- DO NOT repeat large sections of document content
-- Keep analysis concise and professional
-- Provide specific, actionable recommendations
+DEEP ANALYSIS INSTRUCTIONS:
+- Perform comprehensive, detailed analysis of all uploaded content
+- Extract key insights, patterns, and important information
+- Compare different sections, clauses, or documents if multiple files
+- Identify legal implications, risks, and opportunities
+- Provide detailed breakdown of structure, content, and meaning
+- Include specific quotes and references from the documents
+- Analyze legal language, terms, and their significance
+- Compare with standard legal practices and requirements
+- Highlight any unusual clauses, missing elements, or concerns
+- Provide actionable insights and recommendations
+- Be thorough and comprehensive in your analysis
 
-Analyze the uploaded content:"""
+Provide deep analysis:"""
         elif request_type == "document":
             combined_prompt = f"""{base_instructions}
 
-DOCUMENT INSTRUCTIONS:
-- Output ONLY the document content
-- NO introductory text or analysis
-- Preserve exact formatting from any uploaded files
-- Keep original CAPITAL LETTERS, spacing, and structure
-- Fill blanks with appropriate information if requested
-- NO extra explanations or commentary
+DOCUMENT GENERATION INSTRUCTIONS:
+- Create a comprehensive legal document with proper formatting
+- Use CAPITAL LETTERS for main titles and section headers
+- Structure with numbered clauses (1., 2., 3.)
+- Use proper legal indentation and spacing
+- NO asterisks, hashtags, or markdown symbols
+- Make it professionally formatted and legally sound
 
-Output the document:"""
+Generate a complete legal document:"""
         elif request_type == "table":
             combined_prompt = f"""{base_instructions}
 
@@ -202,12 +207,12 @@ Generate a well-structured table:"""
             combined_prompt = f"""{base_instructions}
 
 RESPONSE INSTRUCTIONS:
-- Provide direct, specific answers to legal questions
-- Give concrete, actionable advice and recommendations
-- Include relevant legal citations and precedents
-- Address practical implications and next steps
-- Use clear, professional legal language
-- Provide specific examples when helpful
+- Provide detailed legal analysis and advice
+- Use numbered lists (1., 2., 3.) for sequential information
+- Use bullet points (•) for key points
+- Structure in clear, readable paragraphs
+- Use CAPITAL LETTERS for emphasis instead of bold
+- NO asterisks, hashtags, or special symbols
 
 Response:"""
 
