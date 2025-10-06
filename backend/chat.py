@@ -249,13 +249,16 @@ Response:"""
             # Process uploaded files
             file_context = ""
             if uploaded_files:
-                print(f"Processing {len(uploaded_files)} uploaded files")
+                print(f"🔍 Processing {len(uploaded_files)} uploaded files")
                 file_context = self.process_uploaded_files(uploaded_files)
+                print(f"🔍 Raw file_context result: '{file_context[:500]}...'")
                 if file_context.strip():
-                    message += f"\n\nFile Analysis:\n{file_context}"
-                    print(f"Added file context to message: {len(file_context)} characters")
+                    message += f"\n\nUploaded Files Content:\n{file_context}"
+                    print(f"✅ Added file context to message: {len(file_context)} characters")
                 else:
-                    print("No file content extracted")
+                    print("❌ No file content extracted - files may be empty or unreadable")
+                    # Add explicit message about file processing failure
+                    message += f"\n\nNote: {len(uploaded_files)} files were uploaded but content could not be extracted. Files: {[f['filename'] for f in uploaded_files]}"
             
             # Retrieve from Knowledge Base
             kb_context, sources = self.retrieve_from_kb(message)
@@ -338,32 +341,54 @@ Response:"""
                 if filename.lower().endswith('.pdf'):
                     # Extract text from PDF with better error handling
                     try:
-                        from pypdf import PdfReader
-                        print(f"Attempting to read PDF: {filename}")
+                        # Try multiple PDF libraries
+                        text = ""
                         
-                        with open(filepath, 'rb') as pdf_file:
-                            reader = PdfReader(pdf_file)
-                            text = ""
+                        # Method 1: pypdf
+                        try:
+                            from pypdf import PdfReader
+                            print(f"📄 Attempting to read PDF with pypdf: {filename}")
                             
-                            print(f"PDF has {len(reader.pages)} pages")
-                            
-                            for i, page in enumerate(reader.pages):
-                                try:
-                                    page_text = page.extract_text()
-                                    text += f"\n--- Page {i+1} ---\n{page_text}\n"
-                                except Exception as page_error:
-                                    print(f"Error reading page {i+1}: {page_error}")
-                                    text += f"\n--- Page {i+1} (Error reading) ---\n"
-                            
-                            if text.strip():
-                                file_contents.append(f"File: {filename}\nContent: {text[:3000]}...")  # Increased limit
-                                print(f"Successfully extracted {len(text)} characters from {filename}")
-                            else:
-                                file_contents.append(f"File: {filename} (PDF appears to be empty or contains only images)")
+                            with open(filepath, 'rb') as pdf_file:
+                                reader = PdfReader(pdf_file)
+                                print(f"📄 PDF has {len(reader.pages)} pages")
+                                
+                                for i, page in enumerate(reader.pages):
+                                    try:
+                                        page_text = page.extract_text()
+                                        if page_text.strip():
+                                            text += f"\n--- Page {i+1} ---\n{page_text}\n"
+                                            print(f"📄 Extracted {len(page_text)} chars from page {i+1}")
+                                    except Exception as page_error:
+                                        print(f"❌ Error reading page {i+1}: {page_error}")
+                                        
+                        except ImportError:
+                            print("❌ pypdf not available, trying PyPDF2")
+                            # Method 2: PyPDF2 fallback
+                            try:
+                                import PyPDF2
+                                with open(filepath, 'rb') as pdf_file:
+                                    reader = PyPDF2.PdfReader(pdf_file)
+                                    for i, page in enumerate(reader.pages):
+                                        page_text = page.extract_text()
+                                        if page_text.strip():
+                                            text += f"\n--- Page {i+1} ---\n{page_text}\n"
+                            except ImportError:
+                                print("❌ No PDF library available")
+                        
+                        if text.strip():
+                            clean_text = text.replace('\n\n\n', '\n\n').strip()
+                            file_contents.append(f"📄 FILE: {filename}\n\nCONTENT:\n{clean_text[:4000]}...")
+                            print(f"✅ Successfully extracted {len(clean_text)} characters from {filename}")
+                        else:
+                            # Try to get file info even if no text
+                            file_size = os.path.getsize(filepath)
+                            file_contents.append(f"📄 FILE: {filename}\nSTATUS: PDF file detected ({file_size} bytes) but no readable text found. This may be a scanned document or image-based PDF.")
+                            print(f"⚠️ PDF {filename} has no extractable text ({file_size} bytes)")
                                 
                     except Exception as pdf_error:
-                        print(f"PDF processing error for {filename}: {pdf_error}")
-                        file_contents.append(f"File: {filename} (PDF processing error: {str(pdf_error)})")
+                        print(f"❌ PDF processing error for {filename}: {pdf_error}")
+                        file_contents.append(f"📄 FILE: {filename}\nERROR: Could not process PDF - {str(pdf_error)}")
                     
                 elif filename.lower().endswith(('.txt', '.doc', '.docx')):
                     # Read text files
@@ -378,8 +403,9 @@ Response:"""
                 print(f"General error processing {filename}: {e}")
                 file_contents.append(f"File: {filename} (error reading: {str(e)})")
         
-        result = "\n\n".join(file_contents)
-        print(f"Final processed content length: {len(result)}")
+        result = "\n\n" + "="*50 + "\n\n".join(file_contents) + "\n" + "="*50
+        print(f"📋 FINAL PROCESSED CONTENT LENGTH: {len(result)} characters")
+        print(f"📋 CONTENT PREVIEW: {result[:200]}...")
         return result
     
     def get_available_models(self):
