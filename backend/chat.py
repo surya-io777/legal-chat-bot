@@ -113,7 +113,7 @@ class ChatService:
         
         # Enhanced prompt for Gemini 2.5 Pro with multimodal and flexible response capabilities
         base_instructions = f"""
-You are an advanced legal AI assistant with access to both knowledge base information and general legal knowledge. 
+You are an advanced legal AI assistant with access to both knowledge base information and general legal knowledge.
 
 Knowledge Base Context (if available):
 {context}
@@ -123,12 +123,17 @@ ADDITIONAL USER INSTRUCTIONS:
 
 User Request: {user_query}
 
-IMPORTANT INSTRUCTIONS:
+CRITICAL FORMATTING RULES - FOLLOW EXACTLY:
 1. You MUST start your response with "SRIS Juris Support states:"
-2. Use both the knowledge base context AND your general legal knowledge to provide comprehensive answers
-3. If knowledge base context is limited, supplement with your legal expertise
-4. Follow the SRIS protocols from your system prompt
-5. Provide professional legal analysis and formatting
+2. NEVER use ** or *** or any asterisks for formatting
+3. NEVER use # or ## or ### for headers
+4. NEVER use markdown symbols like _, `, ~, or |
+5. Use ONLY plain text with proper capitalization for emphasis
+6. For lists, use: 1. 2. 3. or • bullet points
+7. For emphasis, use CAPITAL LETTERS or write "Important:"
+8. Write in clear paragraphs with line breaks
+9. Use proper legal document structure
+10. NO special characters except periods, commas, and colons
 """
         
         if request_type == 'document':
@@ -136,8 +141,13 @@ IMPORTANT INSTRUCTIONS:
 
 {base_instructions}
 
-6. DOCUMENT GENERATION: Create a comprehensive legal document with proper formatting, clauses, and structure suitable for PDF generation
-7. Make it professionally formatted and legally sound
+DOCUMENT GENERATION INSTRUCTIONS:
+- Create a comprehensive legal document with proper formatting
+- Use CAPITAL LETTERS for main titles and section headers
+- Structure with numbered clauses (1., 2., 3.)
+- Use proper legal indentation and spacing
+- NO asterisks, hashtags, or markdown symbols
+- Make it professionally formatted and legally sound
 
 Generate a complete legal document:"""
         elif request_type == 'table':
@@ -145,9 +155,12 @@ Generate a complete legal document:"""
 
 {base_instructions}
 
-6. TABLE GENERATION: Create structured data in table format using | symbols for columns
-7. Include clear headers and organized rows
-8. Make the data comprehensive and useful
+TABLE GENERATION INSTRUCTIONS:
+- Create structured data without table symbols
+- Use numbered lists (1., 2., 3.) for organization
+- Use clear headers in CAPITAL LETTERS
+- Present data in clean, readable format
+- NO pipes (|) or markdown table formatting
 
 Generate a well-structured table:"""
         else:
@@ -155,8 +168,13 @@ Generate a well-structured table:"""
 
 {base_instructions}
 
-6. Provide detailed legal analysis and advice
-7. Use proper legal formatting and structure
+RESPONSE INSTRUCTIONS:
+- Provide detailed legal analysis and advice
+- Use numbered lists (1., 2., 3.) for sequential information
+- Use bullet points (•) for key points
+- Structure in clear, readable paragraphs
+- Use CAPITAL LETTERS for emphasis instead of bold
+- NO asterisks, hashtags, or special symbols
 
 Response:"""
         
@@ -253,10 +271,10 @@ Response:"""
             # Generate output files based on request type
             output_files = []
             
-            # Generate downloadable files based on request type
-            if request_type == 'document' or len(bot_response) > 500:
+            # Generate downloadable files ONLY when explicitly requested
+            if request_type == 'document':
                 try:
-                    print(f"🔥 GENERATING PDF for request_type: {request_type}")
+                    print(f"🔥 GENERATING PDF for document request")
                     pdf_content = self.generate_pdf_content(bot_response, session_id, message)
                     if pdf_content:
                         output_files.append({

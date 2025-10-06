@@ -149,16 +149,47 @@ function MessageBubble({ message }) {
       .replace(/SRIS Juris Support states:/g, '')
       .trim();
     
-    // Simple text file download (works reliably)
-    const blob = new Blob([cleanContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `legal_document_${new Date(timestamp).getTime()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // Generate proper PDF using jsPDF CDN
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload = () => {
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Add title
+        doc.setFontSize(16);
+        doc.text('Legal Document', 20, 20);
+        
+        // Add content
+        doc.setFontSize(12);
+        const lines = doc.splitTextToSize(cleanContent, 170);
+        let yPosition = 40;
+        
+        lines.forEach((line) => {
+          if (yPosition > 280) {
+            doc.addPage();
+            yPosition = 20;
+          }
+          doc.text(line, 20, yPosition);
+          yPosition += 7;
+        });
+        
+        doc.save(`legal_document_${new Date(timestamp).getTime()}.pdf`);
+      } catch (error) {
+        // Fallback to text file
+        const blob = new Blob([cleanContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `legal_document_${new Date(timestamp).getTime()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    };
+    document.head.appendChild(script);
   };
 
   return (
@@ -189,13 +220,8 @@ function MessageBubble({ message }) {
         
 
         
-        {/* Only show download for document generation requests */}
-        {!isUser && message.message_content && message.message_content.length > 1000 && (
-          message.message_content.toLowerCase().includes('agreement') ||
-          message.message_content.toLowerCase().includes('contract') ||
-          message.message_content.toLowerCase().includes('petition') ||
-          message.message_content.toLowerCase().includes('document')
-        ) && (
+        {/* Only show download when output_files exist */}
+        {!isUser && message.output_files && message.output_files.length > 0 && (
           <Box sx={{ mt: 2 }}>
             <Button
               variant="contained"

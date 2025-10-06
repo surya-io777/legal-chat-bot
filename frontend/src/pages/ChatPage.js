@@ -41,6 +41,16 @@ function ChatPage({ setAuth }) {
   };
 
   const sendMessage = async (message, model, userInstructions, files = [], abortSignal) => {
+    // Add user message immediately to UI
+    const userMessage = {
+      message_type: 'user',
+      message_content: message,
+      message_timestamp: new Date().toISOString(),
+      session_id: currentSession || 'temp'
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    
     const result = await chatService.sendMessage(message, currentSession, model, userInstructions, files, abortSignal);
     if (result.success) {
       loadSessions(); // Refresh sessions
