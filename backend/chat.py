@@ -22,7 +22,7 @@ class ChatService:
         
         # Available models
         self.models = {
-            'claude-sonnet-4': 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+            'claude-sonnet-4': 'arn:aws:bedrock:us-east-1:293354969601:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0',
             'nova-pro': 'amazon.nova-pro-v1:0'
         }
     
