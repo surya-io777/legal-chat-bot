@@ -32,16 +32,13 @@ def create_user(email, password, name):
             UserAttributes=[
                 {"Name": "email", "Value": email},
                 {"Name": "name", "Value": name},
+                {"Name": "email_verified", "Value": "false"},
             ],
             TemporaryPassword=password,
-            MessageAction="SUPPRESS",
+            MessageAction="RESEND",  # Send verification email
         )
 
-        cognito.admin_set_user_password(
-            UserPoolId=USER_POOL_ID, Username=email, Password=password, Permanent=True
-        )
-
-        return {"success": True, "message": "User created successfully"}
+        return {"success": True, "message": "User created successfully. Please check your email for verification."}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -70,6 +67,49 @@ def authenticate_user(email, password):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
+def verify_email(email, verification_code):
+    try:
+        response = cognito.confirm_sign_up(
+            ClientId=CLIENT_ID,
+            Username=email,
+            ConfirmationCode=verification_code
+        )
+        return {"success": True, "message": "Email verified successfully"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def resend_verification(email):
+    try:
+        response = cognito.resend_confirmation_code(
+            ClientId=CLIENT_ID,
+            Username=email
+        )
+        return {"success": True, "message": "Verification code sent"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def forgot_password(email):
+    try:
+        response = cognito.forgot_password(
+            ClientId=CLIENT_ID,
+            Username=email
+        )
+        return {"success": True, "message": "Password reset code sent to your email"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def reset_password(email, confirmation_code, new_password):
+    try:
+        response = cognito.confirm_forgot_password(
+            ClientId=CLIENT_ID,
+            Username=email,
+            ConfirmationCode=confirmation_code,
+            Password=new_password
+        )
+        return {"success": True, "message": "Password reset successfully"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 def verify_token(token):
     try:

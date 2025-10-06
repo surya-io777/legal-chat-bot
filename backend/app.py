@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-from auth import verify_token, create_user, authenticate_user
+from auth import verify_token, create_user, authenticate_user, verify_email, resend_verification, forgot_password, reset_password
 from chat import ChatService
 import os
 import tempfile
@@ -20,6 +20,26 @@ def signup():
 def signin():
     data = request.json
     return authenticate_user(data['email'], data['password'])
+
+@app.route('/api/auth/verify-email', methods=['POST'])
+def verify_email_route():
+    data = request.json
+    return verify_email(data['email'], data['code'])
+
+@app.route('/api/auth/resend-verification', methods=['POST'])
+def resend_verification_route():
+    data = request.json
+    return resend_verification(data['email'])
+
+@app.route('/api/auth/forgot-password', methods=['POST'])
+def forgot_password_route():
+    data = request.json
+    return forgot_password(data['email'])
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password_route():
+    data = request.json
+    return reset_password(data['email'], data['code'], data['password'])
 
 @app.route('/api/models', methods=['GET'])
 def get_models():
