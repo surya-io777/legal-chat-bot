@@ -77,10 +77,12 @@ class ChatService:
         doc_keywords = [
             'generate document', 'create document', 'prepare document',
             'draft agreement', 'create agreement', 'prepare petition',
-            'generate pdf', 'create pdf', 'make document',
+            'generate pdf', 'create pdf', 'make document', 'output pdf',
             'prepare contract', 'draft contract', 'create legal document',
             'draft', 'prepare', 'create petition', 'generate agreement',
-            'make agreement', 'write document', 'compose document'
+            'make agreement', 'write document', 'compose document',
+            'give it as output pdf', 'output as pdf', 'pdf file',
+            'save as pdf', 'download pdf', 'export pdf'
         ]
         
         table_keywords = [
@@ -91,7 +93,9 @@ class ChatService:
         
         message_lower = message.lower()
         
+        # Check for PDF output requests
         if any(keyword in message_lower for keyword in doc_keywords):
+            print(f"🔥 DOCUMENT REQUEST DETECTED: {message_lower}")
             return 'document'
         elif any(keyword in message_lower for keyword in table_keywords):
             return 'table'
@@ -115,14 +119,15 @@ Knowledge Base Context:
 
 User Request: {user_query}
 
-IMPORTANT: The user is requesting document generation. You MUST:
+IMPORTANT: The user is requesting document generation and PDF output. You MUST:
 1. Create a comprehensive legal document based on the request
 2. Use proper legal formatting and structure
 3. Include all necessary clauses and sections
 4. Make it professional and legally sound
 5. Use the knowledge base context to inform the document content
+6. Provide substantial content suitable for PDF generation
 
-Generate a complete, detailed legal document:"""
+Generate a complete, detailed legal document that will be converted to PDF:"""
         elif request_type == 'table':
             combined_prompt = f"""{self.system_prompt}
 
@@ -151,7 +156,7 @@ Knowledge Base Context:
 
 User Request: {user_query}
 
-IMPORTANT: You MUST start your response with "SRIS Juris Support states:" and follow all protocols in the system prompt above. Use proper legal formatting, analysis structure, and professional presentation.
+IMPORTANT: You MUST start your response with "SRIS Juris Support states:" and follow all protocols in the system prompt above. Use proper legal formatting, analysis structure, and professional presentation. If the user requests PDF output, provide comprehensive content suitable for document generation.
 
 Response:"""
             else:
@@ -162,7 +167,7 @@ Knowledge Base Context:
 
 User Request: {user_query}
 
-IMPORTANT: You MUST start your response with "SRIS Juris Support states:" and follow all protocols in the system prompt above. Use proper legal formatting, analysis structure, and professional presentation.
+IMPORTANT: You MUST start your response with "SRIS Juris Support states:" and follow all protocols in the system prompt above. Use proper legal formatting, analysis structure, and professional presentation. If the user requests PDF output, provide comprehensive content suitable for document generation.
 
 Response:"""
         
@@ -309,21 +314,32 @@ Response:"""
             # Generate output files based on request type
             output_files = []
             
-            if request_type == 'document':
-                pdf_url = generate_legal_document(bot_response, session_id, message)
-                output_files.append({
-                    'type': 'pdf', 
-                    'url': pdf_url,
-                    'title': f"Legal Document - {message[:30]}..."
-                })
+            # Always try to generate PDF if response contains substantial content
+            if request_type == 'document' or len(bot_response) > 500:
+                try:
+                    print(f"🔥 GENERATING PDF for request_type: {request_type}")
+                    pdf_url = generate_legal_document(bot_response, session_id, message)
+                    if pdf_url:
+                        output_files.append({
+                            'type': 'pdf', 
+                            'url': pdf_url,
+                            'title': f"Legal Document - {message[:30]}..."
+                        })
+                        print(f"✅ PDF generated: {pdf_url}")
+                except Exception as e:
+                    print(f"❌ PDF generation failed: {e}")
             
             elif request_type == 'table':
-                table_url = generate_table(bot_response, session_id)
-                output_files.append({
-                    'type': 'table', 
-                    'url': table_url,
-                    'title': f"Table - {message[:30]}..."
-                })
+                try:
+                    table_url = generate_table(bot_response, session_id)
+                    if table_url:
+                        output_files.append({
+                            'type': 'table', 
+                            'url': table_url,
+                            'title': f"Table - {message[:30]}..."
+                        })
+                except Exception as e:
+                    print(f"❌ Table generation failed: {e}")
             
             return {
                 'success': True,
