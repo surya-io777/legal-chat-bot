@@ -140,7 +140,7 @@ function MessageBubble({ message }) {
   };
   
   const handleAutoDownload = (content, timestamp) => {
-    // Clean content for PDF
+    // Clean content
     const cleanContent = content
       .replace(/\*\*/g, '')
       .replace(/###/g, '')
@@ -149,41 +149,16 @@ function MessageBubble({ message }) {
       .replace(/SRIS Juris Support states:/g, '')
       .trim();
     
-    // Create proper PDF using jsPDF
-    try {
-      import('jspdf').then(({ jsPDF }) => {
-        const doc = new jsPDF();
-        const pageHeight = doc.internal.pageSize.height;
-        const margin = 20;
-        let yPosition = margin;
-        
-        // Split content into lines
-        const lines = doc.splitTextToSize(cleanContent, 170);
-        
-        lines.forEach((line) => {
-          if (yPosition > pageHeight - margin) {
-            doc.addPage();
-            yPosition = margin;
-          }
-          doc.text(line, margin, yPosition);
-          yPosition += 7;
-        });
-        
-        const filename = `legal_document_${new Date(timestamp).getTime()}.pdf`;
-        doc.save(filename);
-      });
-    } catch (error) {
-      // Fallback: create text file with PDF extension
-      const blob = new Blob([cleanContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `legal_document_${new Date(timestamp).getTime()}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
+    // Simple text file download (works reliably)
+    const blob = new Blob([cleanContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `legal_document_${new Date(timestamp).getTime()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -236,7 +211,7 @@ function MessageBubble({ message }) {
                 }
               }}
             >
-              Download as PDF
+              Download Document
             </Button>
           </Box>
         )}
