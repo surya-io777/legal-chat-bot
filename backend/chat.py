@@ -37,9 +37,12 @@ class ChatService:
         try:
             prompt_path = os.path.join(os.path.dirname(__file__), 'prompt.txt')
             with open(prompt_path, 'r', encoding='utf-8') as file:
-                return file.read()
+                content = file.read()
+                print(f"✅ PROMPT LOADED: {len(content)} characters from {prompt_path}")
+                print(f"✅ PROMPT PREVIEW: {content[:200]}...")
+                return content
         except Exception as e:
-            print(f"Error loading prompt.txt: {e}")
+            print(f"❌ ERROR loading prompt.txt: {e}")
             return "You are Legal Chat Bot, a professional legal assistant."
     
     def retrieve_from_kb(self, query):
@@ -136,7 +139,7 @@ IMPORTANT: The user is requesting table/chart generation. You MUST:
 
 Generate a well-structured table:"""
         else:
-            # Regular chat response
+            # Regular chat response - ENFORCE SRIS FORMAT
             if user_instructions.strip():
                 combined_prompt = f"""{self.system_prompt}
 
@@ -148,7 +151,7 @@ Knowledge Base Context:
 
 User Request: {user_query}
 
-Follow both the system protocols and the user's additional instructions above.
+IMPORTANT: You MUST start your response with "SRIS Juris Support states:" and follow all protocols in the system prompt above. Use proper legal formatting, analysis structure, and professional presentation.
 
 Response:"""
             else:
@@ -159,13 +162,21 @@ Knowledge Base Context:
 
 User Request: {user_query}
 
+IMPORTANT: You MUST start your response with "SRIS Juris Support states:" and follow all protocols in the system prompt above. Use proper legal formatting, analysis structure, and professional presentation.
+
 Response:"""
+        
+        print(f"🔥 GENERATING RESPONSE WITH MODEL: {model_name}")
+        print(f"🔥 PROMPT LENGTH: {len(combined_prompt)} characters")
+        print(f"🔥 PROMPT STARTS WITH: {combined_prompt[:300]}...")
         
         try:
             if model_name == 'gemini-pro':
                 model = genai.GenerativeModel(model_id)
                 response = model.generate_content(combined_prompt)
-                return response.text
+                result_text = response.text
+                print(f"✅ GEMINI RESPONSE LENGTH: {len(result_text)} characters")
+                return result_text
                 
             elif model_name in ['claude-4-sonnet', 'claude-3-5-sonnet']:
                 response = self.bedrock_runtime.invoke_model(
@@ -182,7 +193,9 @@ Response:"""
                     })
                 )
                 result = json.loads(response['body'].read())
-                return result['content'][0]['text']
+                result_text = result['content'][0]['text']
+                print(f"✅ CLAUDE RESPONSE LENGTH: {len(result_text)} characters")
+                return result_text
                 
             elif model_name == 'nova-pro':
                 response = self.bedrock_runtime.invoke_model(
@@ -201,7 +214,9 @@ Response:"""
                     })
                 )
                 result = json.loads(response['body'].read())
-                return result['output']['message']['content'][0]['text']
+                result_text = result['output']['message']['content'][0]['text']
+                print(f"✅ NOVA RESPONSE LENGTH: {len(result_text)} characters")
+                return result_text
                 
         except Exception as e:
             return f"Error generating response: {str(e)}"
@@ -234,8 +249,13 @@ Response:"""
             # Process uploaded files
             file_context = ""
             if uploaded_files:
+                print(f"Processing {len(uploaded_files)} uploaded files")
                 file_context = self.process_uploaded_files(uploaded_files)
-                message += f"\n\nFile Analysis:\n{file_context}"
+                if file_context.strip():
+                    message += f"\n\nFile Analysis:\n{file_context}"
+                    print(f"Added file context to message: {len(file_context)} characters")
+                else:
+                    print("No file content extracted")
             
             # Retrieve from Knowledge Base
             kb_context, sources = self.retrieve_from_kb(message)
@@ -307,29 +327,60 @@ Response:"""
             filename = file_info['filename']
             filepath = file_info['path']
             
+            print(f"Processing file: {filename} at path: {filepath}")
+            
             try:
+                # Check if file exists
+                if not os.path.exists(filepath):
+                    file_contents.append(f"File: {filename} (file not found at path: {filepath})")
+                    continue
+                
                 if filename.lower().endswith('.pdf'):
-                    # Extract text from PDF
-                    from pypdf import PdfReader
-                    reader = PdfReader(filepath)
-                    text = ""
-                    for page in reader.pages:
-                        text += page.extract_text() + "\n"
-                    file_contents.append(f"File: {filename}\nContent: {text[:2000]}...")  # Limit content
+                    # Extract text from PDF with better error handling
+                    try:
+                        from pypdf import PdfReader
+                        print(f"Attempting to read PDF: {filename}")
+                        
+                        with open(filepath, 'rb') as pdf_file:
+                            reader = PdfReader(pdf_file)
+                            text = ""
+                            
+                            print(f"PDF has {len(reader.pages)} pages")
+                            
+                            for i, page in enumerate(reader.pages):
+                                try:
+                                    page_text = page.extract_text()
+                                    text += f"\n--- Page {i+1} ---\n{page_text}\n"
+                                except Exception as page_error:
+                                    print(f"Error reading page {i+1}: {page_error}")
+                                    text += f"\n--- Page {i+1} (Error reading) ---\n"
+                            
+                            if text.strip():
+                                file_contents.append(f"File: {filename}\nContent: {text[:3000]}...")  # Increased limit
+                                print(f"Successfully extracted {len(text)} characters from {filename}")
+                            else:
+                                file_contents.append(f"File: {filename} (PDF appears to be empty or contains only images)")
+                                
+                    except Exception as pdf_error:
+                        print(f"PDF processing error for {filename}: {pdf_error}")
+                        file_contents.append(f"File: {filename} (PDF processing error: {str(pdf_error)})")
                     
                 elif filename.lower().endswith(('.txt', '.doc', '.docx')):
                     # Read text files
                     with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
                         content = f.read()
-                    file_contents.append(f"File: {filename}\nContent: {content[:2000]}...")  # Limit content
+                    file_contents.append(f"File: {filename}\nContent: {content[:3000]}...")  # Increased limit
                     
                 else:
                     file_contents.append(f"File: {filename} (unsupported format)")
                     
             except Exception as e:
+                print(f"General error processing {filename}: {e}")
                 file_contents.append(f"File: {filename} (error reading: {str(e)})")
         
-        return "\n\n".join(file_contents)
+        result = "\n\n".join(file_contents)
+        print(f"Final processed content length: {len(result)}")
+        return result
     
     def get_available_models(self):
         return [
