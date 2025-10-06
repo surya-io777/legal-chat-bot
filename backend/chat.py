@@ -4,6 +4,7 @@ from datetime import datetime
 import uuid
 from utils import generate_pdf, generate_table, generate_legal_document
 import os
+import google.generativeai as genai
 
 class ChatService:
     def __init__(self):
@@ -20,10 +21,15 @@ class ChatService:
         # Load your custom prompt
         self.system_prompt = self.load_prompt_file()
         
+        # Configure Gemini
+        genai.configure(api_key="AIzaSyCEKP2j4eHv1LLKvKm6GACh6s7-K67YYR8")
+        
         # Available models
         self.models = {
-            'claude-sonnet-4': 'arn:aws:bedrock:us-east-1:293354969601:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-            'nova-pro': 'amazon.nova-pro-v1:0'
+            'claude-4-sonnet': 'arn:aws:bedrock:us-east-1:293354969601:inference-profile/global.anthropic.claude-sonnet-4-20250514-v1:0',
+            'claude-3-5-sonnet': 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+            'nova-pro': 'amazon.nova-pro-v1:0',
+            'gemini-pro': 'gemini-2.5-pro'
         }
     
     def load_prompt_file(self):
@@ -92,7 +98,7 @@ class ChatService:
     def generate_response(self, user_query, context, model_name='claude-sonnet-4', request_type='chat', user_instructions=""):
         """Generate response using selected model and your prompt"""
         
-        model_id = self.models.get(model_name, self.models['claude-sonnet-4'])
+        model_id = self.models.get(model_name, self.models['claude-4-sonnet'])
         
         # Build enhanced prompt based on request type
         if request_type == 'document':
@@ -156,7 +162,12 @@ User Request: {user_query}
 Response:"""
         
         try:
-            if model_name == 'claude-sonnet-4':
+            if model_name == 'gemini-pro':
+                model = genai.GenerativeModel(model_id)
+                response = model.generate_content(combined_prompt)
+                return response.text
+                
+            elif model_name in ['claude-4-sonnet', 'claude-3-5-sonnet']:
                 response = self.bedrock_runtime.invoke_model(
                     modelId=model_id,
                     body=json.dumps({
@@ -322,8 +333,10 @@ Response:"""
     
     def get_available_models(self):
         return [
-            {'id': 'claude-sonnet-4', 'name': 'Claude 3.5 Sonnet v2'},
-            {'id': 'nova-pro', 'name': 'Amazon Nova Pro'}
+            {'id': 'claude-4-sonnet', 'name': 'Claude 4 Sonnet (Latest)'},
+            {'id': 'claude-3-5-sonnet', 'name': 'Claude 3.5 Sonnet'},
+            {'id': 'nova-pro', 'name': 'Amazon Nova Pro'},
+            {'id': 'gemini-pro', 'name': 'Google Gemini 2.5 Pro'}
         ]
     
     def get_user_sessions(self, user_id):
@@ -343,7 +356,7 @@ Response:"""
                         'title': item['session_title'],
                         'last_message': item['message_content'][:100],
                         'timestamp': item['message_timestamp'],
-                        'model_used': item.get('model_used', 'claude-sonnet-4'),
+                        'model_used': item.get('model_used', 'claude-4-sonnet'),
                         'request_type': item.get('request_type', 'chat')
                     }
             

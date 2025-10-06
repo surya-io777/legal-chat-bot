@@ -32,12 +32,26 @@ function Sidebar({ sessions, onSessionSelect, currentSession, onNewChat }) {
         </Button>
       </Box>
       
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
-        <Typography variant="h6" sx={{ p: 2, pb: 1 }}>
+      <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Typography variant="h6" sx={{ p: 2, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
           Chat History
         </Typography>
         
-        <List sx={{ pt: 0 }}>
+        <Box sx={{ 
+          flex: 1, 
+          overflowY: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '6px'
+          },
+          '&::-webkit-scrollbar-track': {
+            background: '#f1f1f1'
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: '#c1c1c1',
+            borderRadius: '3px'
+          }
+        }}>
+          <List sx={{ pt: 0 }}>
           {sessions.map((session) => (
             <ListItem
               key={session.session_id}
@@ -91,15 +105,16 @@ function Sidebar({ sessions, onSessionSelect, currentSession, onNewChat }) {
               </Box>
             </ListItem>
           ))}
-        </List>
-        
-        {sessions.length === 0 && (
-          <Box sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              No chat history yet
-            </Typography>
-          </Box>
-        )}
+          </List>
+          
+          {sessions.length === 0 && (
+            <Box sx={{ p: 2, textAlign: 'center' }}>
+              <Typography variant="body2" color="text.secondary">
+                No chat history yet
+              </Typography>
+            </Box>
+          )}
+        </Box>
       </Box>
     </Paper>
   );

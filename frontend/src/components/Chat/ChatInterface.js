@@ -11,21 +11,36 @@ import MessageBubble from './MessageBubble';
 
 function ChatInterface({ messages, onSendMessage, models }) {
   const [inputMessage, setInputMessage] = useState('');
-  const [selectedModel, setSelectedModel] = useState('claude-sonnet-4');
+  const [selectedModel, setSelectedModel] = useState('claude-4-sonnet');
   const [userInstructions, setUserInstructions] = useState('');
   const [showInstructions, setShowInstructions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const isNearBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    const threshold = 100;
+    return container.scrollTop + container.clientHeight >= container.scrollHeight - threshold;
+  };
+
+  const handleScroll = () => {
+    setShouldAutoScroll(isNearBottom());
+  };
+
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (shouldAutoScroll) {
+      scrollToBottom();
+    }
+  }, [messages, shouldAutoScroll]);
 
   const handleFileUpload = (event) => {
     const files = Array.from(event.target.files);
@@ -44,6 +59,7 @@ function ChatInterface({ messages, onSendMessage, models }) {
   const handleSendMessage = async () => {
     if ((!inputMessage.trim() && uploadedFiles.length === 0) || loading) return;
     
+    setShouldAutoScroll(true); // Always scroll when user sends message
     setLoading(true);
     try {
       // Create message with file context
@@ -125,32 +141,70 @@ function ChatInterface({ messages, onSendMessage, models }) {
         </Box>
       </Box>
 
-      {/* Messages Area */}
-      <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>
-        {messages.length === 0 ? (
-          <Box sx={{ textAlign: 'center', mt: 4 }}>
-            <Typography variant="h6" color="text.secondary">
-              Welcome to Legal Chat Bot
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Ask legal questions or request document generation
-            </Typography>
-            <Box sx={{ mt: 2 }}>
-              <Chip label="Try: 'What are custody requirements?'" variant="outlined" sx={{ m: 0.5 }} />
-              <Chip label="Try: 'Generate a custody agreement'" variant="outlined" sx={{ m: 0.5 }} />
-              <Chip label="Try: 'Create a table of filing requirements'" variant="outlined" sx={{ m: 0.5 }} />
+      {/* Messages Area - Fixed Height with Independent Scroll */}
+      <Box 
+        sx={{ 
+          flex: 1, 
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <Box 
+          ref={messagesContainerRef}
+          onScroll={handleScroll}
+          sx={{ 
+            flex: 1,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            p: 1,
+            '&::-webkit-scrollbar': {
+              width: '6px'
+            },
+            '&::-webkit-scrollbar-track': {
+              background: '#f1f1f1'
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: '#c1c1c1',
+              borderRadius: '3px'
+            }
+          }}
+        >
+          {messages.length === 0 ? (
+            <Box sx={{ textAlign: 'center', mt: 4 }}>
+              <Typography variant="h6" color="text.secondary">
+                Welcome to Legal Chat Bot
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Ask legal questions or request document generation
+              </Typography>
+              <Box sx={{ mt: 2 }}>
+                <Chip label="Try: 'What are custody requirements?'" variant="outlined" sx={{ m: 0.5 }} />
+                <Chip label="Try: 'Generate a custody agreement'" variant="outlined" sx={{ m: 0.5 }} />
+                <Chip label="Try: 'Create a table of filing requirements'" variant="outlined" sx={{ m: 0.5 }} />
+              </Box>
             </Box>
-          </Box>
-        ) : (
-          messages.map((msg, index) => (
-            <MessageBubble key={index} message={msg} />
-          ))
-        )}
-        <div ref={messagesEndRef} />
+          ) : (
+            messages.map((msg, index) => (
+              <MessageBubble key={index} message={msg} />
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </Box>
       </Box>
 
-      {/* Input Area */}
-      <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+      {/* Input Area - Fixed Position */}
+      <Box 
+        sx={{ 
+          p: 2, 
+          borderTop: 1, 
+          borderColor: 'divider', 
+          bgcolor: 'background.paper',
+          position: 'sticky',
+          bottom: 0,
+          zIndex: 1
+        }}
+      >
         
         {/* File Upload Area */}
         {uploadedFiles.length > 0 && (
