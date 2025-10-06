@@ -51,10 +51,10 @@ class ChatService:
             return "You are Legal Chat Bot, a professional legal assistant."
 
     def retrieve_from_kb(self, query):
-        """Retrieve relevant documents from Knowledge Base"""
+        """Retrieve relevant documents from Knowledge Base for general Q&A only"""
         if not self.bedrock_agent:
-            print("Bedrock agent not available, using fallback context")
-            return f"Legal context for: {query}", []
+            print("Bedrock agent not available, using Gemini directly")
+            return "", []
 
         try:
             response = self.bedrock_agent.retrieve(
@@ -70,11 +70,15 @@ class ChatService:
                 context += f"{content}\n\n"
                 sources.append(source)
 
+            if not context.strip():
+                print("No relevant context found in knowledge base, using Gemini directly")
+                return "", []
+
             return context, sources
 
         except Exception as e:
-            print(f"KB retrieval error: {e}")
-            return f"Legal context for: {query}", []
+            print(f"KB retrieval error: {e}, using Gemini directly")
+            return "", []
 
     def detect_document_request(self, message):
         """Detect if user wants document generation or analysis"""
@@ -137,11 +141,10 @@ class ChatService:
         model_id = self.models["gemini-pro"]
 
         # Enhanced prompt for Gemini 2.5 Pro with multimodal and flexible response capabilities
+        kb_context_text = f"\nKnowledge Base Context:\n{context}" if context.strip() else ""
+        
         base_instructions = f"""
-You are a professional legal AI assistant.
-
-Knowledge Base Context (if available):
-{context}
+You are a professional legal AI assistant.{kb_context_text}
 
 Chat History (for context continuity):
 {chat_history}
@@ -163,16 +166,15 @@ CRITICAL FORMATTING RULES:
             combined_prompt = f"""{base_instructions}
 
 ANALYSIS INSTRUCTIONS:
-- Analyze the uploaded content and provide key insights only
-- Focus on important legal points, risks, and recommendations
-- DO NOT repeat or quote large sections of the original document
-- Summarize findings in clear, concise points
-- Highlight only the most critical issues and opportunities
-- Provide actionable recommendations without lengthy explanations
-- Keep analysis focused and to the point
-- Avoid reproducing document content in the response
+- Analyze the uploaded files directly using your multimodal capabilities
+- Provide key legal insights, risks, and recommendations
+- Focus on critical issues and actionable advice
+- Compare documents if multiple files are provided
+- DO NOT repeat large sections of document content
+- Keep analysis concise and professional
+- Provide specific, actionable recommendations
 
-Provide concise analysis with key insights:"""
+Analyze the uploaded content:"""
         elif request_type == "document":
             combined_prompt = f"""{base_instructions}
 
@@ -301,9 +303,14 @@ Response:"""
                     message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide key insights and recommendations only. Do not repeat document content."
                 else:
                     message += f"\n\nFiles to analyze: {', '.join(file_list)}"
-
-            # Retrieve from Knowledge Base
-            kb_context, sources = self.retrieve_from_kb(message)
+                
+                # For file uploads, skip knowledge base and go directly to Gemini
+                print("🔥 FILE UPLOAD DETECTED: Skipping knowledge base, using Gemini directly")
+                kb_context, sources = "", []
+            else:
+                # Only use knowledge base for general Q&A without files
+                print("🔥 GENERAL Q&A: Using knowledge base")
+                kb_context, sources = self.retrieve_from_kb(message)
 
             # Generate response with your prompt and chat history
             bot_response = self.generate_response(
