@@ -112,8 +112,12 @@ class ChatService:
 
         message_lower = message.lower()
 
-        # Check for analysis requests (highest priority for uploaded files)
-        if any(keyword in message_lower for keyword in analysis_keywords):
+        # Check for form filling requests (highest priority)
+        if any(keyword in message_lower for keyword in fill_keywords):
+            print(f"🔥 FORM FILL REQUEST DETECTED: {message_lower}")
+            return "fill_form"
+        # Check for analysis requests
+        elif any(keyword in message_lower for keyword in analysis_keywords):
             print(f"🔥 ANALYSIS REQUEST DETECTED: {message_lower}")
             return "analysis"
         # Check for document generation requests
@@ -163,7 +167,22 @@ Formatting Guidelines:
 - Maintain context from previous messages in this conversation
 """
 
-        if request_type == "analysis":
+        if request_type == "fill_form":
+            combined_prompt = f"""{base_instructions}
+
+FORM FILLING INSTRUCTIONS:
+- PRESERVE the EXACT original formatting, titles, bold text, and structure
+- ONLY fill in blanks, empty fields, or answer questions
+- DO NOT add any extra content, headers, explanations, or recommendations
+- DO NOT change any existing text, formatting, or structure
+- Keep all original CAPITAL LETTERS, bold formatting, and spacing exactly as provided
+- Fill blanks with appropriate legal information based on context
+- Maintain the exact same document layout and appearance
+- NO additional analysis, insights, or commentary
+- Output ONLY the original document with filled blanks
+
+Fill the form exactly as provided:"""
+        elif request_type == "analysis":
             combined_prompt = f"""{base_instructions}
 
 DEEP ANALYSIS INSTRUCTIONS:
@@ -304,7 +323,9 @@ Response:"""
                     f"🔥 GEMINI MULTIMODAL: Will process {len(uploaded_files)} files directly"
                 )
                 file_list = [f["filename"] for f in uploaded_files]
-                if request_type == "analysis":
+                if request_type == "fill_form":
+                    message += f"\n\nFORM FILES TO FILL: {', '.join(file_list)}\nIMPORTANT: Preserve exact formatting and only fill blanks. Do not add any extra content."
+                elif request_type == "analysis":
                     message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide key insights and recommendations only. Do not repeat document content."
                 else:
                     message += f"\n\nFiles to analyze: {', '.join(file_list)}"
