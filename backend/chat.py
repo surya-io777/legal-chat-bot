@@ -79,14 +79,15 @@ class ChatService:
     def detect_document_request(self, message):
         """Detect if user wants document generation"""
         doc_keywords = [
+            'generate', 'create', 'draft', 'prepare', 'make', 'write', 'compose',
+            'document', 'agreement', 'contract', 'petition', 'pdf', 'output',
             'generate document', 'create document', 'prepare document',
             'draft agreement', 'create agreement', 'prepare petition',
             'generate pdf', 'create pdf', 'make document', 'output pdf',
             'prepare contract', 'draft contract', 'create legal document',
-            'draft', 'prepare', 'create petition', 'generate agreement',
             'make agreement', 'write document', 'compose document',
-            'give it as output pdf', 'output as pdf', 'pdf file',
-            'save as pdf', 'download pdf', 'export pdf'
+            'give it as output', 'output as pdf', 'pdf file',
+            'save as pdf', 'download pdf', 'export pdf', 'generate output'
         ]
         
         table_keywords = [
@@ -97,13 +98,15 @@ class ChatService:
         
         message_lower = message.lower()
         
-        # Check for PDF output requests
+        # Check for document generation requests
         if any(keyword in message_lower for keyword in doc_keywords):
             print(f"🔥 DOCUMENT REQUEST DETECTED: {message_lower}")
             return 'document'
         elif any(keyword in message_lower for keyword in table_keywords):
+            print(f"🔥 TABLE REQUEST DETECTED: {message_lower}")
             return 'table'
         else:
+            print(f"🔥 CHAT REQUEST: {message_lower}")
             return 'chat'
     
     def generate_response(self, user_query, context, model_name='claude-sonnet-4', request_type='chat', user_instructions=""):
@@ -113,33 +116,26 @@ class ChatService:
         
         # Enhanced prompt for Gemini 2.5 Pro with multimodal and flexible response capabilities
         base_instructions = f"""
-You are an advanced legal AI assistant with access to both knowledge base information and general legal knowledge.
+You are a professional legal AI assistant. Provide comprehensive legal analysis and advice.
 
 Knowledge Base Context (if available):
 {context}
 
-ADDITIONAL USER INSTRUCTIONS:
-{user_instructions}
+User Instructions: {user_instructions}
 
 User Request: {user_query}
 
-CRITICAL FORMATTING RULES - FOLLOW EXACTLY:
-1. You MUST start your response with "SRIS Juris Support states:"
-2. NEVER use ** or *** or any asterisks for formatting
-3. NEVER use # or ## or ### for headers
-4. NEVER use markdown symbols like _, `, ~, or |
-5. Use ONLY plain text with proper capitalization for emphasis
-6. For lists, use: 1. 2. 3. or • bullet points
-7. For emphasis, use CAPITAL LETTERS or write "Important:"
-8. Write in clear paragraphs with line breaks
-9. Use proper legal document structure
-10. NO special characters except periods, commas, and colons
+Formatting Guidelines:
+- Start responses with "SRIS Juris Support states:"
+- Use clear, professional language
+- Structure responses with numbered lists and bullet points
+- Avoid markdown formatting symbols
+- Use proper legal document structure when generating documents
+- Be comprehensive and precise in your analysis
 """
         
         if request_type == 'document':
-            combined_prompt = f"""{self.system_prompt}
-
-{base_instructions}
+            combined_prompt = f"""{base_instructions}
 
 DOCUMENT GENERATION INSTRUCTIONS:
 - Create a comprehensive legal document with proper formatting
@@ -151,9 +147,7 @@ DOCUMENT GENERATION INSTRUCTIONS:
 
 Generate a complete legal document:"""
         elif request_type == 'table':
-            combined_prompt = f"""{self.system_prompt}
-
-{base_instructions}
+            combined_prompt = f"""{base_instructions}
 
 TABLE GENERATION INSTRUCTIONS:
 - Create structured data without table symbols
@@ -164,9 +158,7 @@ TABLE GENERATION INSTRUCTIONS:
 
 Generate a well-structured table:"""
         else:
-            combined_prompt = f"""{self.system_prompt}
-
-{base_instructions}
+            combined_prompt = f"""{base_instructions}
 
 RESPONSE INSTRUCTIONS:
 - Provide detailed legal analysis and advice
