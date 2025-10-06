@@ -26,16 +26,14 @@ def get_secret_hash(username):
 
 def create_user(email, password, name):
     try:
-        response = cognito.admin_create_user(
-            UserPoolId=USER_POOL_ID,
+        response = cognito.sign_up(
+            ClientId=CLIENT_ID,
             Username=email,
+            Password=password,
             UserAttributes=[
                 {"Name": "email", "Value": email},
                 {"Name": "name", "Value": name},
-                {"Name": "email_verified", "Value": "false"},
-            ],
-            TemporaryPassword=password,
-            MessageAction="RESEND",  # Send verification email
+            ]
         )
 
         return {"success": True, "message": "User created successfully. Please check your email for verification."}
@@ -45,17 +43,19 @@ def create_user(email, password, name):
 
 def authenticate_user(email, password):
     try:
-        auth_params = {"USERNAME": email, "PASSWORD": password}
+        auth_params = {
+            "USERNAME": email,
+            "PASSWORD": password
+        }
 
         # Add SECRET_HASH if client secret is configured
         secret_hash = get_secret_hash(email)
         if secret_hash:
             auth_params["SECRET_HASH"] = secret_hash
 
-        response = cognito.admin_initiate_auth(
-            UserPoolId=USER_POOL_ID,
+        response = cognito.initiate_auth(
             ClientId=CLIENT_ID,
-            AuthFlow="ADMIN_NO_SRP_AUTH",
+            AuthFlow="USER_PASSWORD_AUTH",
             AuthParameters=auth_params,
         )
 
