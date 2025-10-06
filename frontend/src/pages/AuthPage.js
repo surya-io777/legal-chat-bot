@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Container, Paper, TextField, Button, Typography, Box, Alert } from '@mui/material';
+import { Container, Paper, TextField, Button, Typography, Box, Alert, IconButton, InputAdornment } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { authService } from '../services/authService';
 
 function AuthPage({ setAuth }) {
@@ -10,6 +11,7 @@ function AuthPage({ setAuth }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -81,6 +83,7 @@ function AuthPage({ setAuth }) {
   
   const resetForm = () => {
     setFormData({ email: '', password: '', name: '', code: '' });
+    setShowPassword(false);
     setError('');
     setSuccess('');
   };
@@ -140,11 +143,23 @@ function AuthPage({ setAuth }) {
               <TextField
                 fullWidth
                 label="Password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 margin="normal"
                 required={!showVerification}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
             )}
             

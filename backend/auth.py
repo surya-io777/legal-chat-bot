@@ -65,7 +65,13 @@ def authenticate_user(email, password):
             "id_token": response["AuthenticationResult"]["IdToken"],
         }
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        error_msg = str(e)
+        if "UserNotConfirmedException" in error_msg:
+            return {"success": False, "error": "Please verify your email before signing in. Check your email for the verification code."}
+        elif "NotAuthorizedException" in error_msg:
+            return {"success": False, "error": "Invalid email or password."}
+        else:
+            return {"success": False, "error": str(e)}
 
 
 def verify_email(email, verification_code):
