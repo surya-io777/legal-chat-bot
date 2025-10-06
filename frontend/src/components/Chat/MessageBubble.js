@@ -225,7 +225,8 @@ function MessageBubble({ message }) {
                     message.message_content?.length > 1000 || 
                     message.message_content?.toLowerCase().includes('pdf') ||
                     message.request_type === 'document' ||
-                    message.request_type === 'fill_form') && (
+                    message.request_type === 'fill_form' ||
+                    message.request_type === 'analysis') && (
           <Box sx={{ mt: 2 }}>
             <Button
               variant="contained"
@@ -241,7 +242,8 @@ function MessageBubble({ message }) {
                 }
               }}
             >
-              {message.request_type === 'fill_form' ? 'Download Filled Form' : 'Download PDF'}
+              {message.request_type === 'fill_form' ? 'Download Filled Form' : 
+               message.request_type === 'analysis' ? 'Download Analysis Report' : 'Download PDF'}
             </Button>
           </Box>
         )}

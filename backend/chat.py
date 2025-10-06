@@ -77,66 +77,43 @@ class ChatService:
             return f"Legal context for: {query}", []
 
     def detect_document_request(self, message):
-        """Detect if user wants document generation"""
+        """Detect if user wants document generation or analysis"""
         doc_keywords = [
-            "generate",
-            "create",
-            "draft",
-            "prepare",
-            "make",
-            "write",
-            "compose",
-            "document",
-            "agreement",
-            "contract",
-            "petition",
-            "pdf",
-            "output",
-            "generate document",
-            "create document",
-            "prepare document",
-            "draft agreement",
-            "create agreement",
-            "prepare petition",
-            "generate pdf",
-            "create pdf",
-            "make document",
-            "output pdf",
-            "prepare contract",
-            "draft contract",
-            "create legal document",
-            "make agreement",
-            "write document",
-            "compose document",
-            "give it as output",
-            "output as pdf",
-            "pdf file",
-            "save as pdf",
-            "download pdf",
-            "export pdf",
-            "generate output",
-            "in pdf",
-            "as pdf",
-            "pdf format",
-            "output in pdf",
+            "generate", "create", "draft", "prepare", "make", "write", "compose",
+            "document", "agreement", "contract", "petition", "pdf", "output",
+            "generate document", "create document", "prepare document",
+            "draft agreement", "create agreement", "prepare petition",
+            "generate pdf", "create pdf", "make document", "output pdf",
+            "prepare contract", "draft contract", "create legal document",
+            "make agreement", "write document", "compose document",
+            "give it as output", "output as pdf", "pdf file",
+            "save as pdf", "download pdf", "export pdf", "generate output",
+            "in pdf", "as pdf", "pdf format", "output in pdf",
+        ]
+
+        analysis_keywords = [
+            "analyze", "analysis", "review", "examine", "study", "evaluate",
+            "assess", "compare", "comparison", "deep dive", "deep analysis",
+            "detailed analysis", "comprehensive review", "thorough analysis",
+            "extract", "summarize", "summary", "breakdown", "insights",
+            "key points", "important points", "findings", "observations",
+            "note about", "notes on", "report on", "overview of"
         ]
 
         table_keywords = [
-            "create table",
-            "generate table",
-            "make table",
-            "create chart",
-            "generate chart",
-            "show table",
-            "table format",
-            "tabular",
-            "spreadsheet",
+            "create table", "generate table", "make table",
+            "create chart", "generate chart", "show table",
+            "table format", "tabular", "spreadsheet",
         ]
 
         message_lower = message.lower()
 
+        # Check for analysis requests (highest priority for uploaded files)
+        if any(keyword in message_lower for keyword in analysis_keywords):
+            print(f"🔥 ANALYSIS REQUEST DETECTED: {message_lower}")
+            return "analysis"
         # Check for document generation requests
-        if any(keyword in message_lower for keyword in doc_keywords):
+        elif any(keyword in message_lower for keyword in doc_keywords):
             print(f"🔥 DOCUMENT REQUEST DETECTED: {message_lower}")
             return "document"
         elif any(keyword in message_lower for keyword in table_keywords):
@@ -182,7 +159,24 @@ CRITICAL FORMATTING RULES:
 - Output ONLY the requested content without additional commentary
 """
 
-        if request_type == "document":
+        if request_type == "analysis":
+            combined_prompt = f"""{base_instructions}
+
+DEEP ANALYSIS INSTRUCTIONS:
+- Perform comprehensive, detailed analysis of all uploaded content
+- Extract key insights, patterns, and important information
+- Compare different sections, clauses, or documents if multiple files
+- Identify legal implications, risks, and opportunities
+- Provide detailed breakdown of structure, content, and meaning
+- Include specific quotes and references from the documents
+- Analyze legal language, terms, and their significance
+- Compare with standard legal practices and requirements
+- Highlight any unusual clauses, missing elements, or concerns
+- Provide actionable insights and recommendations
+- Be thorough and comprehensive in your analysis
+
+Provide deep analysis:"""
+        elif request_type == "document":
             combined_prompt = f"""{base_instructions}
 
 DOCUMENT INSTRUCTIONS:
@@ -304,7 +298,10 @@ Response:"""
                     f"🔥 GEMINI MULTIMODAL: Will process {len(uploaded_files)} files directly"
                 )
                 file_list = [f["filename"] for f in uploaded_files]
-                message += f"\n\nFiles to analyze: {', '.join(file_list)}"
+                if request_type == "analysis":
+                    message += f"\n\nFILES FOR DEEP ANALYSIS: {', '.join(file_list)}\nPerform comprehensive analysis including content breakdown, legal implications, comparisons, and detailed insights."
+                else:
+                    message += f"\n\nFiles to analyze: {', '.join(file_list)}"
 
             # Retrieve from Knowledge Base
             kb_context, sources = self.retrieve_from_kb(message)
@@ -341,21 +338,23 @@ Response:"""
             output_files = []
 
             # Generate downloadable files when explicitly requested OR when response is long
-            if request_type == "document" or len(bot_response) > 1000:
+            if request_type in ["document", "analysis"] or len(bot_response) > 1000:
                 try:
                     print(
-                        f"🔥 GENERATING PDF for document request (type: {request_type}, length: {len(bot_response)})"
+                        f"🔥 GENERATING PDF for request (type: {request_type}, length: {len(bot_response)})"
                     )
                     pdf_content = self.generate_pdf_content(
                         bot_response, session_id, message
                     )
                     if pdf_content:
+                        filename = f"analysis_report_{session_id}.pdf" if request_type == "analysis" else f"legal_document_{session_id}.pdf"
+                        title = f"Analysis Report - {message[:30]}..." if request_type == "analysis" else f"Legal Document - {message[:30]}..."
                         output_files.append(
                             {
                                 "type": "pdf",
                                 "content": pdf_content,
-                                "filename": f"legal_document_{session_id}.pdf",
-                                "title": f"Legal Document - {message[:30]}...",
+                                "filename": filename,
+                                "title": title,
                             }
                         )
                         print(f"✅ PDF content generated")
@@ -521,45 +520,69 @@ Response:"""
         return result
 
     def generate_pdf_content(self, content, session_id, title):
-        """Generate PDF content preserving exact formatting"""
+        """Generate PDF content preserving exact formatting with bold text"""
         try:
             from reportlab.lib.pagesizes import letter
-            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Preformatted
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
             from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
             from reportlab.lib.units import inch
             from io import BytesIO
             import base64
+            import re
 
             buffer = BytesIO()
             doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=inch, rightMargin=inch)
             styles = getSampleStyleSheet()
             story = []
 
-            # Create custom style that preserves formatting
-            custom_style = ParagraphStyle(
-                'CustomStyle',
+            # Create styles for normal and bold text
+            normal_style = ParagraphStyle(
+                'NormalStyle',
                 parent=styles['Normal'],
-                fontName='Courier',  # Monospace font preserves spacing
-                fontSize=10,
-                leading=12,
+                fontName='Times-Roman',
+                fontSize=11,
+                leading=14,
                 leftIndent=0,
                 rightIndent=0,
-                spaceAfter=0,
+                spaceAfter=6,
                 spaceBefore=0
             )
+            
+            bold_style = ParagraphStyle(
+                'BoldStyle',
+                parent=styles['Normal'],
+                fontName='Times-Bold',
+                fontSize=12,
+                leading=16,
+                leftIndent=0,
+                rightIndent=0,
+                spaceAfter=8,
+                spaceBefore=4
+            )
 
-            # Clean content and preserve formatting
+            # Clean content - remove any AI intro text
             clean_content = content.replace('SRIS Juris Support states:', '').strip()
             
-            # Split into lines and preserve exact formatting
+            # Process lines to detect formatting
             lines = clean_content.split('\n')
             for line in lines:
-                if line.strip():
-                    # Use Preformatted to preserve exact spacing and formatting
-                    para = Preformatted(line, custom_style)
+                line = line.strip()
+                if not line:
+                    story.append(Spacer(1, 6))
+                    continue
+                
+                # Detect if line should be bold (all caps, titles, headers)
+                if (line.isupper() and len(line) > 3) or \
+                   any(word in line.upper() for word in ['AGREEMENT', 'CONTRACT', 'PETITION', 'WHEREAS', 'NOW THEREFORE']):
+                    # Bold formatting for titles and headers
+                    para = Paragraph(f"<b>{line}</b>", bold_style)
                     story.append(para)
                 else:
-                    story.append(Spacer(1, 6))
+                    # Regular text with preserved spacing
+                    # Convert multiple spaces to non-breaking spaces
+                    formatted_line = line.replace('  ', '&nbsp;&nbsp;')
+                    para = Paragraph(formatted_line, normal_style)
+                    story.append(para)
 
             doc.build(story)
             pdf_content = buffer.getvalue()
