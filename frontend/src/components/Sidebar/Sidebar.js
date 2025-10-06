@@ -20,7 +20,7 @@ function Sidebar({ sessions, onSessionSelect, currentSession, onNewChat }) {
   };
 
   return (
-    <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
       <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
         <Button
           fullWidth
@@ -40,15 +40,20 @@ function Sidebar({ sessions, onSessionSelect, currentSession, onNewChat }) {
         <Box sx={{ 
           flex: 1, 
           overflowY: 'auto',
+          position: 'relative',
           '&::-webkit-scrollbar': {
-            width: '6px'
+            width: '8px'
           },
           '&::-webkit-scrollbar-track': {
-            background: '#f1f1f1'
+            background: '#f5f5f5',
+            borderRadius: '4px'
           },
           '&::-webkit-scrollbar-thumb': {
-            background: '#c1c1c1',
-            borderRadius: '3px'
+            background: '#1976d2',
+            borderRadius: '4px',
+            '&:hover': {
+              background: '#1565c0'
+            }
           }
         }}>
           <List sx={{ pt: 0 }}>
@@ -88,7 +93,7 @@ function Sidebar({ sessions, onSessionSelect, currentSession, onNewChat }) {
                 
                 <Box sx={{ mt: 1, display: 'flex', gap: 0.5 }}>
                   <Chip 
-                    label={session.model_used || 'claude-sonnet-4'} 
+                    label="Gemini 2.5 Pro" 
                     size="small" 
                     variant="outlined"
                     sx={{ fontSize: '0.7rem', height: 20 }}
@@ -116,7 +121,7 @@ function Sidebar({ sessions, onSessionSelect, currentSession, onNewChat }) {
           )}
         </Box>
       </Box>
-    </Paper>
+    </Box>
   );
 }
 

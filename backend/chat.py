@@ -24,11 +24,8 @@ class ChatService:
         # Configure Gemini
         genai.configure(api_key="AIzaSyCEKP2j4eHv1LLKvKm6GACh6s7-K67YYR8")
         
-        # Available models
+        # Available models - Only Gemini 2.5 Pro
         self.models = {
-            'claude-4-sonnet': 'arn:aws:bedrock:us-east-1:293354969601:inference-profile/global.anthropic.claude-sonnet-4-20250514-v1:0',
-            'claude-3-5-sonnet': 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-            'nova-pro': 'amazon.nova-pro-v1:0',
             'gemini-pro': 'gemini-2.5-pro'
         }
     
@@ -105,69 +102,54 @@ class ChatService:
     def generate_response(self, user_query, context, model_name='claude-sonnet-4', request_type='chat', user_instructions=""):
         """Generate response using selected model and your prompt"""
         
-        model_id = self.models.get(model_name, self.models['claude-4-sonnet'])
+        model_id = self.models.get(model_name, self.models['gemini-pro'])
         
-        # Build enhanced prompt based on request type
+        # Enhanced prompt for Gemini 2.5 Pro with multimodal and flexible response capabilities
+        base_instructions = f"""
+You are an advanced legal AI assistant with access to both knowledge base information and general legal knowledge. 
+
+Knowledge Base Context (if available):
+{context}
+
+ADDITIONAL USER INSTRUCTIONS:
+{user_instructions}
+
+User Request: {user_query}
+
+IMPORTANT INSTRUCTIONS:
+1. You MUST start your response with "SRIS Juris Support states:"
+2. Use both the knowledge base context AND your general legal knowledge to provide comprehensive answers
+3. If knowledge base context is limited, supplement with your legal expertise
+4. Follow the SRIS protocols from your system prompt
+5. Provide professional legal analysis and formatting
+"""
+        
         if request_type == 'document':
             combined_prompt = f"""{self.system_prompt}
 
-ADDITIONAL USER INSTRUCTIONS:
-{user_instructions}
+{base_instructions}
 
-Knowledge Base Context:
-{context}
+6. DOCUMENT GENERATION: Create a comprehensive legal document with proper formatting, clauses, and structure suitable for PDF generation
+7. Make it professionally formatted and legally sound
 
-User Request: {user_query}
-
-IMPORTANT: The user is requesting document generation and PDF output. You MUST:
-1. Create a comprehensive legal document based on the request
-2. Use proper legal formatting and structure
-3. Include all necessary clauses and sections
-4. Make it professional and legally sound
-5. Use the knowledge base context to inform the document content
-6. Provide substantial content suitable for PDF generation
-
-Generate a complete, detailed legal document that will be converted to PDF:"""
+Generate a complete legal document:"""
         elif request_type == 'table':
             combined_prompt = f"""{self.system_prompt}
 
-Knowledge Base Context:
-{context}
+{base_instructions}
 
-User Request: {user_query}
-
-IMPORTANT: The user is requesting table/chart generation. You MUST:
-1. Create structured data in table format
-2. Use | symbols to separate columns
-3. Include headers and organized rows
-4. Make the data clear and useful
+6. TABLE GENERATION: Create structured data in table format using | symbols for columns
+7. Include clear headers and organized rows
+8. Make the data comprehensive and useful
 
 Generate a well-structured table:"""
         else:
-            # Regular chat response - ENFORCE SRIS FORMAT
-            if user_instructions.strip():
-                combined_prompt = f"""{self.system_prompt}
+            combined_prompt = f"""{self.system_prompt}
 
-ADDITIONAL USER INSTRUCTIONS:
-{user_instructions}
+{base_instructions}
 
-Knowledge Base Context:
-{context}
-
-User Request: {user_query}
-
-IMPORTANT: You MUST start your response with "SRIS Juris Support states:" and follow all protocols in the system prompt above. Use proper legal formatting, analysis structure, and professional presentation. If the user requests PDF output, provide comprehensive content suitable for document generation.
-
-Response:"""
-            else:
-                combined_prompt = f"""{self.system_prompt}
-
-Knowledge Base Context:
-{context}
-
-User Request: {user_query}
-
-IMPORTANT: You MUST start your response with "SRIS Juris Support states:" and follow all protocols in the system prompt above. Use proper legal formatting, analysis structure, and professional presentation. If the user requests PDF output, provide comprehensive content suitable for document generation.
+6. Provide detailed legal analysis and advice
+7. Use proper legal formatting and structure
 
 Response:"""
         
@@ -176,70 +158,31 @@ Response:"""
         print(f"🔥 PROMPT STARTS WITH: {combined_prompt[:300]}...")
         
         try:
-            if model_name == 'gemini-pro':
-                model = genai.GenerativeModel(model_id)
+            # Only Gemini 2.5 Pro with multimodal capabilities
+            model = genai.GenerativeModel(model_id)
+            
+            # Check if there are uploaded files for Gemini multimodal processing
+            if hasattr(self, '_current_uploaded_files') and self._current_uploaded_files:
+                print(f"🔥 GEMINI MULTIMODAL: Processing with {len(self._current_uploaded_files)} files")
                 
-                # Check if there are uploaded files for Gemini
-                if hasattr(self, '_current_uploaded_files') and self._current_uploaded_files:
-                    print(f"🔥 GEMINI: Processing with {len(self._current_uploaded_files)} files")
-                    
-                    # Prepare content with files for Gemini
-                    content_parts = [combined_prompt]
-                    
-                    for file_info in self._current_uploaded_files:
-                        if file_info['filename'].lower().endswith('.pdf'):
-                            print(f"📄 Adding PDF file to Gemini: {file_info['filename']}")
-                            # Upload file to Gemini
-                            uploaded_file = genai.upload_file(file_info['path'])
-                            content_parts.append(uploaded_file)
-                    
-                    response = model.generate_content(content_parts)
-                else:
-                    response = model.generate_content(combined_prompt)
-                    
-                result_text = response.text
-                print(f"✅ GEMINI RESPONSE LENGTH: {len(result_text)} characters")
-                return result_text
+                # Prepare content with files for Gemini
+                content_parts = [combined_prompt]
                 
-            elif model_name in ['claude-4-sonnet', 'claude-3-5-sonnet']:
-                response = self.bedrock_runtime.invoke_model(
-                    modelId=model_id,
-                    body=json.dumps({
-                        "anthropic_version": "bedrock-2023-05-31",
-                        "max_tokens": 4000,
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": combined_prompt
-                            }
-                        ]
-                    })
-                )
-                result = json.loads(response['body'].read())
-                result_text = result['content'][0]['text']
-                print(f"✅ CLAUDE RESPONSE LENGTH: {len(result_text)} characters")
-                return result_text
+                for file_info in self._current_uploaded_files:
+                    filename = file_info['filename'].lower()
+                    if filename.endswith(('.pdf', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp')):
+                        print(f"📄 Adding multimodal file to Gemini: {file_info['filename']}")
+                        # Upload file to Gemini for multimodal processing
+                        uploaded_file = genai.upload_file(file_info['path'])
+                        content_parts.append(uploaded_file)
                 
-            elif model_name == 'nova-pro':
-                response = self.bedrock_runtime.invoke_model(
-                    modelId=model_id,
-                    body=json.dumps({
-                        "messages": [
-                            {
-                                "role": "user",
-                                "content": [{"text": combined_prompt}]
-                            }
-                        ],
-                        "inferenceConfig": {
-                            "maxTokens": 4000,
-                            "temperature": 0.3
-                        }
-                    })
-                )
-                result = json.loads(response['body'].read())
-                result_text = result['output']['message']['content'][0]['text']
-                print(f"✅ NOVA RESPONSE LENGTH: {len(result_text)} characters")
-                return result_text
+                response = model.generate_content(content_parts)
+            else:
+                response = model.generate_content(combined_prompt)
+                
+            result_text = response.text
+            print(f"✅ GEMINI RESPONSE LENGTH: {len(result_text)} characters")
+            return result_text
                 
         except Exception as e:
             return f"Error generating response: {str(e)}"
@@ -269,25 +212,14 @@ Response:"""
         )
         
         try:
-            # Store uploaded files for Gemini direct access
+            # Store uploaded files for Gemini multimodal processing
             self._current_uploaded_files = uploaded_files
             
-            # Process uploaded files (only for non-Gemini models)
-            file_context = ""
-            if uploaded_files and model_name != 'gemini-pro':
-                print(f"🔍 Processing {len(uploaded_files)} uploaded files for {model_name}")
-                file_context = self.process_uploaded_files(uploaded_files)
-                print(f"🔍 Raw file_context result: '{file_context[:500]}...'")
-                if file_context.strip():
-                    message += f"\n\nUploaded Files Content:\n{file_context}"
-                    print(f"✅ Added file context to message: {len(file_context)} characters")
-                else:
-                    print("❌ No file content extracted - files may be empty or unreadable")
-                    # Add explicit message about file processing failure
-                    message += f"\n\nNote: {len(uploaded_files)} files were uploaded but content could not be extracted. Files: {[f['filename'] for f in uploaded_files]}"
-            elif uploaded_files and model_name == 'gemini-pro':
-                print(f"🔥 GEMINI: Will process {len(uploaded_files)} files directly")
-                message += f"\n\nFiles to analyze: {[f['filename'] for f in uploaded_files]}"
+            # Gemini handles all files directly with multimodal capabilities
+            if uploaded_files:
+                print(f"🔥 GEMINI MULTIMODAL: Will process {len(uploaded_files)} files directly")
+                file_list = [f['filename'] for f in uploaded_files]
+                message += f"\n\nFiles to analyze: {', '.join(file_list)}"
             
             # Retrieve from Knowledge Base
             kb_context, sources = self.retrieve_from_kb(message)
@@ -314,28 +246,30 @@ Response:"""
             # Generate output files based on request type
             output_files = []
             
-            # Always try to generate PDF if response contains substantial content
+            # Generate downloadable files based on request type
             if request_type == 'document' or len(bot_response) > 500:
                 try:
                     print(f"🔥 GENERATING PDF for request_type: {request_type}")
-                    pdf_url = generate_legal_document(bot_response, session_id, message)
-                    if pdf_url:
+                    pdf_content = self.generate_pdf_content(bot_response, session_id, message)
+                    if pdf_content:
                         output_files.append({
                             'type': 'pdf', 
-                            'url': pdf_url,
+                            'content': pdf_content,
+                            'filename': f"legal_document_{session_id}.pdf",
                             'title': f"Legal Document - {message[:30]}..."
                         })
-                        print(f"✅ PDF generated: {pdf_url}")
+                        print(f"✅ PDF content generated")
                 except Exception as e:
                     print(f"❌ PDF generation failed: {e}")
             
             elif request_type == 'table':
                 try:
-                    table_url = generate_table(bot_response, session_id)
-                    if table_url:
+                    table_content = self.generate_table_content(bot_response, session_id)
+                    if table_content:
                         output_files.append({
-                            'type': 'table', 
-                            'url': table_url,
+                            'type': 'csv', 
+                            'content': table_content,
+                            'filename': f"table_{session_id}.csv",
                             'title': f"Table - {message[:30]}..."
                         })
                 except Exception as e:
@@ -454,6 +388,63 @@ Response:"""
         print(f"📋 CONTENT PREVIEW: {result[:200]}...")
         return result
     
+    def generate_pdf_content(self, content, session_id, title):
+        """Generate PDF content for frontend download"""
+        try:
+            from reportlab.lib.pagesizes import letter
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet
+            from io import BytesIO
+            import base64
+            
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            styles = getSampleStyleSheet()
+            story = []
+            
+            # Add title
+            title_para = Paragraph(f"<b>{title[:50]}...</b>", styles['Title'])
+            story.append(title_para)
+            story.append(Spacer(1, 12))
+            
+            # Add content
+            content_para = Paragraph(content.replace('\n', '<br/>'), styles['Normal'])
+            story.append(content_para)
+            
+            doc.build(story)
+            pdf_content = buffer.getvalue()
+            buffer.close()
+            
+            # Return base64 encoded content for frontend
+            return base64.b64encode(pdf_content).decode('utf-8')
+            
+        except Exception as e:
+            print(f"PDF generation error: {e}")
+            return None
+    
+    def generate_table_content(self, content, session_id):
+        """Generate CSV content for frontend download"""
+        try:
+            # Extract table data from content
+            lines = content.split('\n')
+            csv_lines = []
+            
+            for line in lines:
+                if '|' in line:
+                    # Convert table format to CSV
+                    csv_line = line.replace('|', ',').strip()
+                    if csv_line.startswith(','):
+                        csv_line = csv_line[1:]
+                    if csv_line.endswith(','):
+                        csv_line = csv_line[:-1]
+                    csv_lines.append(csv_line)
+            
+            return '\n'.join(csv_lines) if csv_lines else content
+            
+        except Exception as e:
+            print(f"Table generation error: {e}")
+            return content
+    
     def extract_pdf_with_ocr(self, filepath, filename):
         """Extract text from image-based PDFs using OCR"""
         try:
@@ -485,9 +476,6 @@ Response:"""
     
     def get_available_models(self):
         return [
-            {'id': 'claude-4-sonnet', 'name': 'Claude 4 Sonnet (Latest)'},
-            {'id': 'claude-3-5-sonnet', 'name': 'Claude 3.5 Sonnet'},
-            {'id': 'nova-pro', 'name': 'Amazon Nova Pro'},
             {'id': 'gemini-pro', 'name': 'Google Gemini 2.5 Pro'}
         ]
     
@@ -508,7 +496,7 @@ Response:"""
                         'title': item['session_title'],
                         'last_message': item['message_content'][:100],
                         'timestamp': item['message_timestamp'],
-                        'model_used': item.get('model_used', 'claude-4-sonnet'),
+                        'model_used': item.get('model_used', 'gemini-pro'),
                         'request_type': item.get('request_type', 'chat')
                     }
             

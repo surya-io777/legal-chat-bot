@@ -9,7 +9,7 @@ const getAuthHeaders = () => ({
 });
 
 export const chatService = {
-  async sendMessage(message, sessionId, model = 'claude-sonnet-4', userInstructions = '', files = []) {
+  async sendMessage(message, sessionId, model = 'gemini-pro', userInstructions = '', files = [], abortSignal) {
     const formData = new FormData();
     formData.append('message', message);
     formData.append('session_id', sessionId || '');
@@ -26,7 +26,9 @@ export const chatService = {
       headers: {
         ...getAuthHeaders().headers,
         'Content-Type': 'multipart/form-data'
-      }
+      },
+      signal: abortSignal,
+      timeout: 120000 // 2 minute timeout
     });
     return response.data;
   },

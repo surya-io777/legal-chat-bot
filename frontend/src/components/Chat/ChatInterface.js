@@ -11,10 +11,12 @@ import MessageBubble from './MessageBubble';
 
 function ChatInterface({ messages, onSendMessage, models }) {
   const [inputMessage, setInputMessage] = useState('');
-  const [selectedModel, setSelectedModel] = useState('claude-4-sonnet');
+  const [selectedModel, setSelectedModel] = useState('gemini-pro');
   const [userInstructions, setUserInstructions] = useState('');
   const [showInstructions, setShowInstructions] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState('');
+  const [abortController, setAbortController] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const messagesEndRef = useRef(null);
@@ -59,9 +61,25 @@ function ChatInterface({ messages, onSendMessage, models }) {
   const handleSendMessage = async () => {
     if ((!inputMessage.trim() && uploadedFiles.length === 0) || loading) return;
     
-    setShouldAutoScroll(true); // Always scroll when user sends message
+    setShouldAutoScroll(true);
     setLoading(true);
+    
+    // Create abort controller for cancellation
+    const controller = new AbortController();
+    setAbortController(controller);
+    
     try {
+      // Set loading status based on content
+      if (uploadedFiles.length > 0) {
+        setLoadingStatus('🔍 Analyzing uploaded files...');
+      } else if (inputMessage.toLowerCase().includes('pdf') || inputMessage.toLowerCase().includes('document')) {
+        setLoadingStatus('📄 Generating document...');
+      } else if (inputMessage.toLowerCase().includes('table')) {
+        setLoadingStatus('📊 Creating table...');
+      } else {
+        setLoadingStatus('🤖 Generating response...');
+      }
+      
       // Create message with file context
       let messageWithFiles = inputMessage;
       if (uploadedFiles.length > 0) {
@@ -69,15 +87,30 @@ function ChatInterface({ messages, onSendMessage, models }) {
         messageWithFiles += `\n\nAttached files: ${fileNames}`;
       }
       
-      const result = await onSendMessage(messageWithFiles, selectedModel, userInstructions, uploadedFiles);
+      const result = await onSendMessage(messageWithFiles, selectedModel, userInstructions, uploadedFiles, controller.signal);
       if (result.success) {
         setInputMessage('');
         setUploadedFiles([]);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      if (error.name === 'AbortError') {
+        console.log('Request was cancelled');
+      } else {
+        console.error('Error sending message:', error);
+      }
     } finally {
       setLoading(false);
+      setLoadingStatus('');
+      setAbortController(null);
+    }
+  };
+  
+  const handleStopGeneration = () => {
+    if (abortController) {
+      abortController.abort();
+      setLoading(false);
+      setLoadingStatus('');
+      setAbortController(null);
     }
   };
 
@@ -117,20 +150,9 @@ function ChatInterface({ messages, onSendMessage, models }) {
             Chat Assistant
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Model</InputLabel>
-              <Select
-                value={selectedModel}
-                label="Model"
-                onChange={(e) => setSelectedModel(e.target.value)}
-              >
-                {models.map((model) => (
-                  <MenuItem key={model.id} value={model.id}>
-                    {model.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+              Gemini 2.5 Pro (Multimodal)
+            </Typography>
             <IconButton 
               onClick={() => setShowInstructions(!showInstructions)}
               color={showInstructions ? 'primary' : 'default'}
@@ -141,13 +163,14 @@ function ChatInterface({ messages, onSendMessage, models }) {
         </Box>
       </Box>
 
-      {/* Messages Area - Fixed Height with Independent Scroll */}
+      {/* Messages Area - Independent Scroll Container */}
       <Box 
         sx={{ 
           flex: 1, 
           overflow: 'hidden',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          position: 'relative'
         }}
       >
         <Box 
@@ -158,15 +181,24 @@ function ChatInterface({ messages, onSendMessage, models }) {
             overflowY: 'auto',
             overflowX: 'hidden',
             p: 1,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             '&::-webkit-scrollbar': {
-              width: '6px'
+              width: '8px'
             },
             '&::-webkit-scrollbar-track': {
-              background: '#f1f1f1'
+              background: '#f5f5f5',
+              borderRadius: '4px'
             },
             '&::-webkit-scrollbar-thumb': {
-              background: '#c1c1c1',
-              borderRadius: '3px'
+              background: '#1976d2',
+              borderRadius: '4px',
+              '&:hover': {
+                background: '#1565c0'
+              }
             }
           }}
         >
@@ -179,9 +211,10 @@ function ChatInterface({ messages, onSendMessage, models }) {
                 Ask legal questions or request document generation
               </Typography>
               <Box sx={{ mt: 2 }}>
-                <Chip label="Try: 'What are custody requirements?'" variant="outlined" sx={{ m: 0.5 }} />
-                <Chip label="Try: 'Generate a custody agreement'" variant="outlined" sx={{ m: 0.5 }} />
+                <Chip label="Try: 'Analyze this PDF document'" variant="outlined" sx={{ m: 0.5 }} />
+                <Chip label="Try: 'Generate a custody agreement as PDF'" variant="outlined" sx={{ m: 0.5 }} />
                 <Chip label="Try: 'Create a table of filing requirements'" variant="outlined" sx={{ m: 0.5 }} />
+                <Chip label="Try: 'Read this handwritten document'" variant="outlined" sx={{ m: 0.5 }} />
               </Box>
             </Box>
           ) : (
@@ -252,20 +285,53 @@ function ChatInterface({ messages, onSendMessage, models }) {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask a legal question, upload files, or request document generation..."
+            placeholder="Ask legal questions, upload PDFs/images, request documents or tables - Gemini 2.5 Pro with multimodal capabilities"
             variant="outlined"
             disabled={loading}
           />
           
-          <Button 
-            onClick={handleSendMessage} 
-            variant="contained"
-            disabled={loading || (!inputMessage.trim() && uploadedFiles.length === 0)}
-            sx={{ minWidth: 'auto', px: 2 }}
-          >
-            <SendIcon />
-          </Button>
+          {loading ? (
+            <Button 
+              onClick={handleStopGeneration}
+              variant="contained"
+              color="error"
+              sx={{ minWidth: 'auto', px: 2 }}
+            >
+              ⏹️
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleSendMessage} 
+              variant="contained"
+              disabled={!inputMessage.trim() && uploadedFiles.length === 0}
+              sx={{ minWidth: 'auto', px: 2 }}
+            >
+              <SendIcon />
+            </Button>
+          )}
         </Box>
+        
+        {loading && (
+          <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box 
+              sx={{ 
+                width: 16, 
+                height: 16, 
+                border: '2px solid #1976d2', 
+                borderTop: '2px solid transparent', 
+                borderRadius: '50%', 
+                animation: 'spin 1s linear infinite',
+                '@keyframes spin': {
+                  '0%': { transform: 'rotate(0deg)' },
+                  '100%': { transform: 'rotate(360deg)' }
+                }
+              }} 
+            />
+            <Typography variant="caption" color="primary" sx={{ fontWeight: 'bold' }}>
+              {loadingStatus}
+            </Typography>
+          </Box>
+        )}
         
         {userInstructions && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>

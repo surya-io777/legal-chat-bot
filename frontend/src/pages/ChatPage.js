@@ -40,8 +40,8 @@ function ChatPage({ setAuth }) {
     }
   };
 
-  const sendMessage = async (message, model, userInstructions, files = []) => {
-    const result = await chatService.sendMessage(message, currentSession, model, userInstructions, files);
+  const sendMessage = async (message, model, userInstructions, files = [], abortSignal) => {
+    const result = await chatService.sendMessage(message, currentSession, model, userInstructions, files, abortSignal);
     if (result.success) {
       loadSessions(); // Refresh sessions
       if (currentSession === result.session_id || !currentSession) {
@@ -75,24 +75,22 @@ function ChatPage({ setAuth }) {
         </Toolbar>
       </AppBar>
       
-      <Box sx={{ flex: 1, display: 'flex' }}>
-        <Grid container sx={{ height: '100%' }}>
-          <Grid item xs={3}>
-            <Sidebar 
-              sessions={sessions}
-              onSessionSelect={loadSession}
-              currentSession={currentSession}
-              onNewChat={startNewChat}
-            />
-          </Grid>
-          <Grid item xs={9}>
-            <ChatInterface 
-              messages={messages}
-              onSendMessage={sendMessage}
-              models={models}
-            />
-          </Grid>
-        </Grid>
+      <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <Box sx={{ width: '300px', flexShrink: 0, borderRight: 1, borderColor: 'divider' }}>
+          <Sidebar 
+            sessions={sessions}
+            onSessionSelect={loadSession}
+            currentSession={currentSession}
+            onNewChat={startNewChat}
+          />
+        </Box>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <ChatInterface 
+            messages={messages}
+            onSendMessage={sendMessage}
+            models={models}
+          />
+        </Box>
       </Box>
     </Box>
   );
