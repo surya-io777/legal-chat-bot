@@ -95,6 +95,13 @@ class ChatService:
             "in pdf", "as pdf", "pdf format", "output in pdf",
         ]
 
+        fill_keywords = [
+            "fill", "complete", "fill out", "fill in", "complete the form",
+            "fill the blanks", "fill answers", "complete answers",
+            "fill the form", "complete the document", "fill missing",
+            "answer the questions", "provide answers", "complete fields"
+        ]
+
         analysis_keywords = [
             "analyze", "analysis", "review", "examine", "study", "evaluate",
             "assess", "compare", "comparison", "deep dive", "deep analysis",
