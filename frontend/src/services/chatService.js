@@ -9,13 +9,25 @@ const getAuthHeaders = () => ({
 });
 
 export const chatService = {
-  async sendMessage(message, sessionId, model = 'claude-sonnet-4', userInstructions = '') {
-    const response = await axios.post(`${API_BASE}/chat`, {
-      message, 
-      session_id: sessionId,
-      model,
-      user_instructions: userInstructions
-    }, getAuthHeaders());
+  async sendMessage(message, sessionId, model = 'claude-sonnet-4', userInstructions = '', files = []) {
+    const formData = new FormData();
+    formData.append('message', message);
+    formData.append('session_id', sessionId || '');
+    formData.append('model', model);
+    formData.append('user_instructions', userInstructions);
+    
+    // Add files to form data
+    files.forEach((fileObj, index) => {
+      formData.append(`file_${index}`, fileObj.file);
+    });
+    
+    const response = await axios.post(`${API_BASE}/chat`, formData, {
+      ...getAuthHeaders(),
+      headers: {
+        ...getAuthHeaders().headers,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
     return response.data;
   },
 

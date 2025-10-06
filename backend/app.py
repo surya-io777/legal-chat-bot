@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 from auth import verify_token, create_user, authenticate_user
 from chat import ChatService
 import os
+import tempfile
 
 app = Flask(__name__)
 CORS(app)
@@ -31,14 +33,48 @@ def chat():
     if not user_data:
         return jsonify({'error': 'Unauthorized'}), 401
     
-    data = request.json
-    return chat_service.send_message(
-        user_data['sub'], 
-        data['message'], 
-        data.get('session_id'),
-        data.get('model', 'claude-sonnet-4'),
-        data.get('user_instructions', "")
-    )
+    # Handle both JSON and form data
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        # File upload request
+        message = request.form.get('message', '')
+        session_id = request.form.get('session_id')
+        model = request.form.get('model', 'claude-sonnet-4')
+        user_instructions = request.form.get('user_instructions', '')
+        
+        # Handle uploaded files
+        uploaded_files = []
+        for key in request.files:
+            if key.startswith('file_'):
+                file = request.files[key]
+                if file and file.filename:
+                    # Save file temporarily
+                    filename = secure_filename(file.filename)
+                    temp_path = os.path.join(tempfile.gettempdir(), filename)
+                    file.save(temp_path)
+                    uploaded_files.append({
+                        'filename': filename,
+                        'path': temp_path
+                    })
+        
+        return chat_service.send_message(
+            user_data['sub'], 
+            message, 
+            session_id,
+            model,
+            user_instructions,
+            uploaded_files
+        )
+    else:
+        # Regular JSON request
+        data = request.json
+        return chat_service.send_message(
+            user_data['sub'], 
+            data['message'], 
+            data.get('session_id'),
+            data.get('model', 'claude-sonnet-4'),
+            data.get('user_instructions', ""),
+            []
+        )
 
 @app.route('/api/chat/history', methods=['GET'])
 def get_chat_history():

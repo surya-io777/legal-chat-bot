@@ -40,8 +40,8 @@ function ChatPage({ setAuth }) {
     }
   };
 
-  const sendMessage = async (message, model, userInstructions) => {
-    const result = await chatService.sendMessage(message, currentSession, model, userInstructions);
+  const sendMessage = async (message, model, userInstructions, files = []) => {
+    const result = await chatService.sendMessage(message, currentSession, model, userInstructions, files);
     if (result.success) {
       loadSessions(); // Refresh sessions
       if (currentSession === result.session_id || !currentSession) {

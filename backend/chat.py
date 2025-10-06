@@ -156,7 +156,7 @@ Response:"""
         except Exception as e:
             return f"Error generating response: {str(e)}"
     
-    def send_message(self, user_id, message, session_id=None, model_name='claude-sonnet-4', user_instructions=""):
+    def send_message(self, user_id, message, session_id=None, model_name='claude-sonnet-4', user_instructions="", uploaded_files=[]):
         if not session_id:
             session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
@@ -181,6 +181,12 @@ Response:"""
         )
         
         try:
+            # Process uploaded files
+            file_context = ""
+            if uploaded_files:
+                file_context = self.process_uploaded_files(uploaded_files)
+                message += f"\n\nFile Analysis:\n{file_context}"
+            
             # Retrieve from Knowledge Base
             kb_context, sources = self.retrieve_from_kb(message)
             
@@ -234,6 +240,46 @@ Response:"""
             
         except Exception as e:
             return {'success': False, 'error': str(e)}
+        finally:
+            # Clean up temporary files
+            for file_info in uploaded_files:
+                try:
+                    if os.path.exists(file_info['path']):
+                        os.remove(file_info['path'])
+                except:
+                    pass
+    
+    def process_uploaded_files(self, uploaded_files):
+        """Process uploaded files and extract content"""
+        file_contents = []
+        
+        for file_info in uploaded_files:
+            filename = file_info['filename']
+            filepath = file_info['path']
+            
+            try:
+                if filename.lower().endswith('.pdf'):
+                    # Extract text from PDF
+                    from pypdf import PdfReader
+                    reader = PdfReader(filepath)
+                    text = ""
+                    for page in reader.pages:
+                        text += page.extract_text() + "\n"
+                    file_contents.append(f"File: {filename}\nContent: {text[:2000]}...")  # Limit content
+                    
+                elif filename.lower().endswith(('.txt', '.doc', '.docx')):
+                    # Read text files
+                    with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+                    file_contents.append(f"File: {filename}\nContent: {content[:2000]}...")  # Limit content
+                    
+                else:
+                    file_contents.append(f"File: {filename} (unsupported format)")
+                    
+            except Exception as e:
+                file_contents.append(f"File: {filename} (error reading: {str(e)})")
+        
+        return "\n\n".join(file_contents)
     
     def get_available_models(self):
         return [
