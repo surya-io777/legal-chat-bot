@@ -53,9 +53,10 @@ def authenticate_user(email, password):
         if secret_hash:
             auth_params["SECRET_HASH"] = secret_hash
 
-        response = cognito.initiate_auth(
+        response = cognito.admin_initiate_auth(
+            UserPoolId=USER_POOL_ID,
             ClientId=CLIENT_ID,
-            AuthFlow="USER_PASSWORD_AUTH",
+            AuthFlow="ADMIN_NO_SRP_AUTH",
             AuthParameters=auth_params,
         )
 
