@@ -22,7 +22,7 @@ class ChatService:
         
         # Available models
         self.models = {
-            'claude-sonnet-4': 'anthropic.claude-3-sonnet-20240229-v1:0',
+            'claude-sonnet-4': 'anthropic.claude-3-5-sonnet-20241022-v2:0',
             'nova-pro': 'amazon.nova-pro-v1:0'
         }
     
@@ -69,12 +69,15 @@ class ChatService:
             'generate document', 'create document', 'prepare document',
             'draft agreement', 'create agreement', 'prepare petition',
             'generate pdf', 'create pdf', 'make document',
-            'prepare contract', 'draft contract', 'create legal document'
+            'prepare contract', 'draft contract', 'create legal document',
+            'draft', 'prepare', 'create petition', 'generate agreement',
+            'make agreement', 'write document', 'compose document'
         ]
         
         table_keywords = [
             'create table', 'generate table', 'make table',
-            'create chart', 'generate chart', 'show table'
+            'create chart', 'generate chart', 'show table',
+            'table format', 'tabular', 'spreadsheet'
         ]
         
         message_lower = message.lower()
@@ -91,9 +94,45 @@ class ChatService:
         
         model_id = self.models.get(model_name, self.models['claude-sonnet-4'])
         
-        # Combine system prompt with user instructions
-        if user_instructions.strip():
+        # Build enhanced prompt based on request type
+        if request_type == 'document':
             combined_prompt = f"""{self.system_prompt}
+
+ADDITIONAL USER INSTRUCTIONS:
+{user_instructions}
+
+Knowledge Base Context:
+{context}
+
+User Request: {user_query}
+
+IMPORTANT: The user is requesting document generation. You MUST:
+1. Create a comprehensive legal document based on the request
+2. Use proper legal formatting and structure
+3. Include all necessary clauses and sections
+4. Make it professional and legally sound
+5. Use the knowledge base context to inform the document content
+
+Generate a complete, detailed legal document:"""
+        elif request_type == 'table':
+            combined_prompt = f"""{self.system_prompt}
+
+Knowledge Base Context:
+{context}
+
+User Request: {user_query}
+
+IMPORTANT: The user is requesting table/chart generation. You MUST:
+1. Create structured data in table format
+2. Use | symbols to separate columns
+3. Include headers and organized rows
+4. Make the data clear and useful
+
+Generate a well-structured table:"""
+        else:
+            # Regular chat response
+            if user_instructions.strip():
+                combined_prompt = f"""{self.system_prompt}
 
 ADDITIONAL USER INSTRUCTIONS:
 {user_instructions}
@@ -106,8 +145,8 @@ User Request: {user_query}
 Follow both the system protocols and the user's additional instructions above.
 
 Response:"""
-        else:
-            combined_prompt = f"""{self.system_prompt}
+            else:
+                combined_prompt = f"""{self.system_prompt}
 
 Knowledge Base Context:
 {context}
@@ -283,7 +322,7 @@ Response:"""
     
     def get_available_models(self):
         return [
-            {'id': 'claude-sonnet-4', 'name': 'Claude Sonnet 4'},
+            {'id': 'claude-sonnet-4', 'name': 'Claude 3.5 Sonnet v2'},
             {'id': 'nova-pro', 'name': 'Amazon Nova Pro'}
         ]
     
