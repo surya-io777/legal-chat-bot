@@ -58,8 +58,9 @@ def chat():
         # File upload request
         message = request.form.get('message', '')
         session_id = request.form.get('session_id')
-        model = request.form.get('model', 'claude-sonnet-4')
+        model = request.form.get('model', 'gemini-pro')
         user_instructions = request.form.get('user_instructions', '')
+        prompt_type = request.form.get('prompt_type', 'general')
         
         # Handle uploaded files
         uploaded_files = []
@@ -82,7 +83,8 @@ def chat():
             session_id,
             model,
             user_instructions,
-            uploaded_files
+            uploaded_files,
+            prompt_type
         )
     else:
         # Regular JSON request
@@ -91,9 +93,10 @@ def chat():
             user_data['sub'], 
             data['message'], 
             data.get('session_id'),
-            data.get('model', 'claude-sonnet-4'),
+            data.get('model', 'gemini-pro'),
             data.get('user_instructions', ""),
-            []
+            [],
+            data.get('prompt_type', 'general')
         )
 
 @app.route('/api/chat/history', methods=['GET'])

@@ -12,6 +12,7 @@ import MessageBubble from './MessageBubble';
 function ChatInterface({ messages, onSendMessage, models }) {
   const [inputMessage, setInputMessage] = useState('');
   const [selectedModel, setSelectedModel] = useState('gemini-pro');
+  const [selectedPrompt, setSelectedPrompt] = useState('general');
   const [userInstructions, setUserInstructions] = useState('');
   const [showInstructions, setShowInstructions] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -87,7 +88,7 @@ function ChatInterface({ messages, onSendMessage, models }) {
         messageWithFiles += `\n\nAttached files: ${fileNames}`;
       }
       
-      const result = await onSendMessage(messageWithFiles, selectedModel, userInstructions, uploadedFiles, controller.signal);
+      const result = await onSendMessage(messageWithFiles, selectedModel, userInstructions, uploadedFiles, controller.signal, selectedPrompt);
       if (result.success) {
         setInputMessage('');
         setUploadedFiles([]);
@@ -150,6 +151,18 @@ function ChatInterface({ messages, onSendMessage, models }) {
             Chat Assistant
           </Typography>
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Prompt</InputLabel>
+              <Select
+                value={selectedPrompt}
+                onChange={(e) => setSelectedPrompt(e.target.value)}
+                label="Prompt"
+              >
+                <MenuItem value="general">General</MenuItem>
+                <MenuItem value="gem1">GEM1</MenuItem>
+                <MenuItem value="gem2">GEM2</MenuItem>
+              </Select>
+            </FormControl>
             <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
               Gemini 2.5 Pro (Multimodal)
             </Typography>

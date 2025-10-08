@@ -37,18 +37,27 @@ class ChatService:
         # Available models - Only Gemini 2.5 Pro
         self.models = {"gemini-pro": "gemini-2.5-pro"}
 
-    def load_prompt_file(self):
-        """Load your custom prompt.txt file"""
+    def load_prompt_file(self, prompt_type="general"):
+        """Load prompt file based on type"""
         try:
-            prompt_path = os.path.join(os.path.dirname(__file__), "prompt.txt")
+            if prompt_type == "general":
+                # Use default Gemini behavior without custom prompt
+                return "You are a professional legal AI assistant."
+            elif prompt_type == "gem1":
+                prompt_path = os.path.join(os.path.dirname(__file__), "gem1.txt")
+            elif prompt_type == "gem2":
+                prompt_path = os.path.join(os.path.dirname(__file__), "gem2.txt")
+            else:
+                prompt_path = os.path.join(os.path.dirname(__file__), "prompt.txt")
+            
             with open(prompt_path, "r", encoding="utf-8") as file:
                 content = file.read()
-                print(f"✅ PROMPT LOADED: {len(content)} characters from {prompt_path}")
+                print(f"✅ PROMPT LOADED ({prompt_type}): {len(content)} characters from {prompt_path}")
                 print(f"✅ PROMPT PREVIEW: {content[:200]}...")
                 return content
         except Exception as e:
-            print(f"❌ ERROR loading prompt.txt: {e}")
-            return "You are Legal Chat Bot, a professional legal assistant."
+            print(f"❌ ERROR loading {prompt_type} prompt: {e}")
+            return "You are a professional legal AI assistant."
 
     def retrieve_from_kb(self, query):
         """Retrieve relevant documents from Knowledge Base for general Q&A only"""
@@ -146,15 +155,18 @@ class ChatService:
         request_type="chat",
         user_instructions="",
         chat_history="",
+        prompt_type="general",
     ):
         """Generate response using Gemini 2.5 Pro"""
 
         model_id = self.models["gemini-pro"]
 
-        # Enhanced prompt for Gemini 2.5 Pro with multimodal and flexible response capabilities
+        # Load appropriate prompt based on selection
+        custom_prompt = self.load_prompt_file(prompt_type)
         kb_context_text = f"\nKnowledge Base Context:\n{context}" if context.strip() else ""
         
-        base_instructions = f"""
+        if prompt_type == "general":
+            base_instructions = f"""
 You are a professional legal AI assistant. Provide comprehensive legal analysis and advice.{kb_context_text}
 
 Chat History (for context continuity):
@@ -172,6 +184,17 @@ Formatting Guidelines:
 - Use proper legal document structure when generating documents
 - Be comprehensive and precise in your analysis
 - Maintain context from previous messages in this conversation
+"""
+        else:
+            base_instructions = f"""
+{custom_prompt}{kb_context_text}
+
+Chat History (for context continuity):
+{chat_history}
+
+User Instructions: {user_instructions}
+
+User Request: {user_query}
 """
 
         if request_type == "fill_form":
@@ -293,6 +316,7 @@ Response:"""
         model_name="gemini-pro",
         user_instructions="",
         uploaded_files=[],
+        prompt_type="general",
     ):
         if not session_id:
             session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -353,6 +377,7 @@ Response:"""
                 request_type,
                 user_instructions,
                 chat_history,
+                prompt_type,
             )
 
             # Save assistant response

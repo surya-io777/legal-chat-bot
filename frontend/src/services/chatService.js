@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://44.204.88.183:5000/api';
+const API_BASE = 'http://34.227.161.25:5000/api';
 
 const getAuthHeaders = () => ({
   headers: {
@@ -9,12 +9,13 @@ const getAuthHeaders = () => ({
 });
 
 export const chatService = {
-  async sendMessage(message, sessionId, model = 'gemini-pro', userInstructions = '', files = [], abortSignal) {
+  async sendMessage(message, sessionId, model = 'gemini-pro', userInstructions = '', files = [], abortSignal, promptType = 'general') {
     const formData = new FormData();
     formData.append('message', message);
     formData.append('session_id', sessionId || '');
     formData.append('model', model);
     formData.append('user_instructions', userInstructions);
+    formData.append('prompt_type', promptType);
     
     // Add files to form data
     files.forEach((fileObj, index) => {

@@ -40,7 +40,7 @@ function ChatPage({ setAuth }) {
     }
   };
 
-  const sendMessage = async (message, model, userInstructions, files = [], abortSignal) => {
+  const sendMessage = async (message, model, userInstructions, files = [], abortSignal, promptType = 'general') => {
     // Add user message immediately to UI
     const userMessage = {
       message_type: 'user',
@@ -51,7 +51,7 @@ function ChatPage({ setAuth }) {
     
     setMessages(prev => [...prev, userMessage]);
     
-    const result = await chatService.sendMessage(message, currentSession, model, userInstructions, files, abortSignal);
+    const result = await chatService.sendMessage(message, currentSession, model, userInstructions, files, abortSignal, promptType);
     if (result.success) {
       loadSessions(); // Refresh sessions
       if (currentSession === result.session_id || !currentSession) {
