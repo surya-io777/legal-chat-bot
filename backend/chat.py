@@ -62,7 +62,7 @@ class ChatService:
     def retrieve_from_kb(self, query):
         """Retrieve relevant documents from Knowledge Base for general Q&A only"""
         if not self.bedrock_agent:
-            print("Bedrock agent not available, using Gemini directly")
+            print("Bedrock agent not available, using SRIS AI directly")
             return "", []
 
         try:
@@ -80,13 +80,13 @@ class ChatService:
                 sources.append(source)
 
             if not context.strip():
-                print("No relevant context found in knowledge base, using Gemini directly")
+                print("No relevant context found in knowledge base, using SRIS AI directly")
                 return "", []
 
             return context, sources
 
         except Exception as e:
-            print(f"KB retrieval error: {e}, using Gemini directly")
+            print(f"KB retrieval error: {e}, using SRIS AI directly")
             return "", []
 
     def detect_document_request(self, message):
@@ -265,7 +265,7 @@ RESPONSE INSTRUCTIONS:
 
 Response:"""
 
-        print(f"🔥 GENERATING RESPONSE WITH MODEL: {model_name}")
+        print(f"🔥 GENERATING RESPONSE WITH SRIS AI SYSTEM: {model_name}")
         print(f"🔥 PROMPT LENGTH: {len(combined_prompt)} characters")
         print(f"🔥 PROMPT STARTS WITH: {combined_prompt[:300]}...")
 
@@ -279,7 +279,7 @@ Response:"""
                 and self._current_uploaded_files
             ):
                 print(
-                    f"🔥 GEMINI MULTIMODAL: Processing with {len(self._current_uploaded_files)} files"
+                    f"🔥 SRIS AI MULTIMODAL: Processing with {len(self._current_uploaded_files)} files"
                 )
 
                 # Prepare content with files for Gemini
@@ -291,7 +291,7 @@ Response:"""
                         (".pdf", ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp")
                     ):
                         print(
-                            f"📄 Adding multimodal file to Gemini: {file_info['filename']}"
+                            f"📄 Adding multimodal file to SRIS AI: {file_info['filename']}"
                         )
                         # Upload file to Gemini for multimodal processing
                         uploaded_file = genai.upload_file(file_info["path"])
@@ -302,7 +302,7 @@ Response:"""
                 response = model.generate_content(combined_prompt)
 
             result_text = response.text
-            print(f"✅ GEMINI RESPONSE LENGTH: {len(result_text)} characters")
+            print(f"✅ SRIS AI RESPONSE LENGTH: {len(result_text)} characters")
             return result_text
 
         except Exception as e:
@@ -351,7 +351,7 @@ Response:"""
             # Gemini handles all files directly with multimodal capabilities
             if uploaded_files:
                 print(
-                    f"🔥 GEMINI MULTIMODAL: Will process {len(uploaded_files)} files directly"
+                    f"🔥 SRIS AI MULTIMODAL: Will process {len(uploaded_files)} files directly"
                 )
                 file_list = [f["filename"] for f in uploaded_files]
                 if request_type == "fill_form":
@@ -362,11 +362,11 @@ Response:"""
                     message += f"\n\nFiles to analyze: {', '.join(file_list)}"
                 
                 # For file uploads, skip knowledge base and go directly to Gemini
-                print("🔥 FILE UPLOAD DETECTED: Skipping knowledge base, using Gemini directly")
+                print("🔥 FILE UPLOAD DETECTED: Skipping knowledge base, using SRIS AI directly")
                 kb_context, sources = "", []
             else:
                 # Only use knowledge base for general Q&A without files
-                print("🔥 GENERAL Q&A: Using knowledge base")
+                print("🔥 GENERAL Q&A: Using knowledge base with SRIS AI")
                 kb_context, sources = self.retrieve_from_kb(message)
 
             # Generate response with your prompt and chat history
@@ -711,7 +711,7 @@ Response:"""
             return ""
 
     def get_available_models(self):
-        return [{"id": "gemini-pro", "name": "Google Gemini 2.5 Pro"}]
+        return [{"id": "gemini-pro", "name": "SRIS Legal AI System"}]
 
     def get_user_sessions(self, user_id):
         try:

@@ -72,13 +72,13 @@ function ChatInterface({ messages, onSendMessage, models }) {
     try {
       // Set loading status based on content
       if (uploadedFiles.length > 0) {
-        setLoadingStatus('Analyzing uploaded files...');
+        setLoadingStatus('SRIS AI analyzing uploaded files...');
       } else if (inputMessage.toLowerCase().includes('pdf') || inputMessage.toLowerCase().includes('document')) {
-        setLoadingStatus('Generating document...');
+        setLoadingStatus('SRIS AI generating document...');
       } else if (inputMessage.toLowerCase().includes('table')) {
-        setLoadingStatus('Creating table...');
+        setLoadingStatus('SRIS AI creating table...');
       } else {
-        setLoadingStatus('Generating response...');
+        setLoadingStatus('SRIS AI processing request...');
       }
       
       // Create message with file context
@@ -159,12 +159,12 @@ function ChatInterface({ messages, onSendMessage, models }) {
                 label="Prompt"
               >
                 <MenuItem value="general">General</MenuItem>
-                <MenuItem value="gem1">GEM1</MenuItem>
-                <MenuItem value="gem2">GEM2</MenuItem>
+                <MenuItem value="gem1">Singularity Counsel Protocol</MenuItem>
+                <MenuItem value="gem2">Paralegal Operational Protocol</MenuItem>
               </Select>
             </FormControl>
             <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-              Gemini 2.5 Pro (Multimodal)
+              SRIS Legal AI System
             </Typography>
             <IconButton 
               onClick={() => setShowInstructions(!showInstructions)}
@@ -218,10 +218,10 @@ function ChatInterface({ messages, onSendMessage, models }) {
           {messages.length === 0 ? (
             <Box sx={{ textAlign: 'center', mt: 4 }}>
               <Typography variant="h6" color="text.secondary">
-                Welcome to Legal Chat Bot
+                Welcome to SRIS Legal AI System
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Ask legal questions or request document generation
+                Advanced legal analysis with specialized protocols
               </Typography>
               <Box sx={{ mt: 2 }}>
                 <Chip label="Try: 'Analyze this PDF document'" variant="outlined" sx={{ m: 0.5 }} />
@@ -346,7 +346,7 @@ function ChatInterface({ messages, onSendMessage, models }) {
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask legal questions, upload PDFs/images, request documents or tables - Gemini 2.5 Pro with multimodal capabilities"
+            placeholder="Ask legal questions, upload PDFs/images, request documents or tables - Advanced multimodal legal AI system"
             variant="outlined"
             disabled={loading}
           />
