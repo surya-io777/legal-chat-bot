@@ -163,10 +163,9 @@ class ChatService:
 
         # Load appropriate prompt based on selection
         if prompt_type == "general":
-            # Use standard instructions for General
-            kb_context_text = f"\nKnowledge Base Context:\n{context}" if context.strip() else ""
+            # Use standard instructions for General (no knowledge base)
             base_instructions = f"""
-You are a professional legal AI assistant. Provide comprehensive legal analysis and advice.{kb_context_text}
+You are a professional legal AI assistant. Provide comprehensive legal analysis and advice.
 
 Chat History (for context continuity):
 {chat_history}
@@ -185,7 +184,7 @@ Formatting Guidelines:
 - Maintain context from previous messages in this conversation
 """
         else:
-            # Use PURE prompt for GEM1/GEM2 - NO knowledge base, NO extra instructions
+            # Use PURE prompt for GEM1/GEM2 - NO extra instructions
             custom_prompt = self.load_prompt_file(prompt_type)
             base_instructions = f"""{custom_prompt}
 
@@ -347,35 +346,22 @@ Response:"""
             # Store uploaded files for Gemini multimodal processing
             self._current_uploaded_files = uploaded_files
 
-            # Handle knowledge base based on prompt type
-            if prompt_type in ["gem1", "gem2"]:
-                # For GEM1/GEM2: NO knowledge base, pure prompt mode
-                print(f"🔥 PURE PROMPT MODE ({prompt_type.upper()}): Skipping knowledge base")
-                kb_context, sources = "", []
-                
-                # Add file info for GEM1/GEM2 if files uploaded
-                if uploaded_files:
-                    file_list = [f["filename"] for f in uploaded_files]
-                    message += f"\n\nUploaded files: {', '.join(file_list)}"
-            else:
-                # For General: use knowledge base and file handling
-                if uploaded_files:
-                    print(
-                        f"🔥 SRIS AI MULTIMODAL: Will process {len(uploaded_files)} files directly"
-                    )
-                    file_list = [f["filename"] for f in uploaded_files]
-                    if request_type == "fill_form":
-                        message += f"\n\nFORM FILES TO FILL: {', '.join(file_list)}\nIMPORTANT: Preserve exact formatting and only fill blanks. Do not add any extra content."
-                    elif request_type == "analysis":
-                        message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide key insights and recommendations only. Do not repeat document content."
-                    else:
-                        message += f"\n\nFiles to analyze: {', '.join(file_list)}"
-                    
-                    print("🔥 FILE UPLOAD DETECTED: Skipping knowledge base, using SRIS AI directly")
-                    kb_context, sources = "", []
+            # KNOWLEDGE BASE DISABLED - All modes use pure prompts
+            print(f"🔥 PURE PROMPT MODE ({prompt_type.upper()}): Knowledge base disabled")
+            kb_context, sources = "", []
+            
+            # Add file info if files uploaded
+            if uploaded_files:
+                print(
+                    f"🔥 SRIS AI MULTIMODAL: Will process {len(uploaded_files)} files directly"
+                )
+                file_list = [f["filename"] for f in uploaded_files]
+                if request_type == "fill_form":
+                    message += f"\n\nFORM FILES TO FILL: {', '.join(file_list)}\nIMPORTANT: Preserve exact formatting and only fill blanks. Do not add any extra content."
+                elif request_type == "analysis":
+                    message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide key insights and recommendations only. Do not repeat document content."
                 else:
-                    print("🔥 GENERAL Q&A: Using knowledge base with SRIS AI")
-                    kb_context, sources = self.retrieve_from_kb(message)
+                    message += f"\n\nFiles to analyze: {', '.join(file_list)}"
 
             # Generate response with your prompt and chat history
             bot_response = self.generate_response(
