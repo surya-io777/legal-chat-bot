@@ -93,7 +93,7 @@ function Sidebar({ sessions, onSessionSelect, currentSession, onNewChat }) {
                 
                 <Box sx={{ mt: 1, display: 'flex', gap: 0.5 }}>
                   <Chip 
-                    label="Gemini 2.5 Pro" 
+                    label="SRIS Legal AI" 
                     size="small" 
                     variant="outlined"
                     sx={{ fontSize: '0.7rem', height: 20 }}

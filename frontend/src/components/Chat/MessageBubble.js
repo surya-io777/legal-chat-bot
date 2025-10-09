@@ -205,7 +205,7 @@ function MessageBubble({ message }) {
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           {isUser ? <PersonIcon sx={{ mr: 1, fontSize: 20 }} /> : <SmartToyIcon sx={{ mr: 1, fontSize: 20 }} />}
           <Typography variant="caption">
-            {isUser ? 'You' : 'Legal Chat Bot'}
+            {isUser ? 'You' : 'SRIS Legal AI'}
           </Typography>
           {message.model_used && !isUser && (
             <Chip 
