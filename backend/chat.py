@@ -162,10 +162,9 @@ class ChatService:
         model_id = self.models["gemini-pro"]
 
         # Load appropriate prompt based on selection
-        custom_prompt = self.load_prompt_file(prompt_type)
-        kb_context_text = f"\nKnowledge Base Context:\n{context}" if context.strip() else ""
-        
         if prompt_type == "general":
+            # Use standard instructions for General
+            kb_context_text = f"\nKnowledge Base Context:\n{context}" if context.strip() else ""
             base_instructions = f"""
 You are a professional legal AI assistant. Provide comprehensive legal analysis and advice.{kb_context_text}
 
@@ -186,19 +185,19 @@ Formatting Guidelines:
 - Maintain context from previous messages in this conversation
 """
         else:
-            base_instructions = f"""
-{custom_prompt}{kb_context_text}
+            # Use PURE prompt for GEM1/GEM2 - NO knowledge base, NO extra instructions
+            custom_prompt = self.load_prompt_file(prompt_type)
+            base_instructions = f"""{custom_prompt}
 
-Chat History (for context continuity):
-{chat_history}
+User Request: {user_query}"""
 
-User Instructions: {user_instructions}
-
-User Request: {user_query}
-"""
-
-        if request_type == "fill_form":
-            combined_prompt = f"""{base_instructions}
+        # For GEM1/GEM2: Use pure prompt without any additional instructions
+        if prompt_type in ["gem1", "gem2"]:
+            combined_prompt = base_instructions
+        else:
+            # For General: Add request-type specific instructions
+            if request_type == "fill_form":
+                combined_prompt = f"""{base_instructions}
 
 FORM FILLING INSTRUCTIONS:
 - PRESERVE the EXACT original formatting, titles, bold text, and structure
@@ -212,8 +211,8 @@ FORM FILLING INSTRUCTIONS:
 - Output ONLY the original document with filled blanks
 
 Fill the form exactly as provided:"""
-        elif request_type == "analysis":
-            combined_prompt = f"""{base_instructions}
+            elif request_type == "analysis":
+                combined_prompt = f"""{base_instructions}
 
 DEEP ANALYSIS INSTRUCTIONS:
 - Perform comprehensive, detailed analysis of all uploaded content
@@ -229,8 +228,8 @@ DEEP ANALYSIS INSTRUCTIONS:
 - Be thorough and comprehensive in your analysis
 
 Provide deep analysis:"""
-        elif request_type == "document":
-            combined_prompt = f"""{base_instructions}
+            elif request_type == "document":
+                combined_prompt = f"""{base_instructions}
 
 DOCUMENT GENERATION INSTRUCTIONS:
 - Create a comprehensive legal document with proper formatting
@@ -241,8 +240,8 @@ DOCUMENT GENERATION INSTRUCTIONS:
 - Make it professionally formatted and legally sound
 
 Generate a complete legal document:"""
-        elif request_type == "table":
-            combined_prompt = f"""{base_instructions}
+            elif request_type == "table":
+                combined_prompt = f"""{base_instructions}
 
 TABLE GENERATION INSTRUCTIONS:
 - Create structured data without table symbols
@@ -252,8 +251,8 @@ TABLE GENERATION INSTRUCTIONS:
 - NO pipes (|) or markdown table formatting
 
 Generate a well-structured table:"""
-        else:
-            combined_prompt = f"""{base_instructions}
+            else:
+                combined_prompt = f"""{base_instructions}
 
 RESPONSE INSTRUCTIONS:
 - Provide detailed legal analysis and advice
@@ -348,26 +347,35 @@ Response:"""
             # Store uploaded files for Gemini multimodal processing
             self._current_uploaded_files = uploaded_files
 
-            # Gemini handles all files directly with multimodal capabilities
-            if uploaded_files:
-                print(
-                    f"🔥 SRIS AI MULTIMODAL: Will process {len(uploaded_files)} files directly"
-                )
-                file_list = [f["filename"] for f in uploaded_files]
-                if request_type == "fill_form":
-                    message += f"\n\nFORM FILES TO FILL: {', '.join(file_list)}\nIMPORTANT: Preserve exact formatting and only fill blanks. Do not add any extra content."
-                elif request_type == "analysis":
-                    message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide key insights and recommendations only. Do not repeat document content."
-                else:
-                    message += f"\n\nFiles to analyze: {', '.join(file_list)}"
-                
-                # For file uploads, skip knowledge base and go directly to Gemini
-                print("🔥 FILE UPLOAD DETECTED: Skipping knowledge base, using SRIS AI directly")
+            # Handle knowledge base based on prompt type
+            if prompt_type in ["gem1", "gem2"]:
+                # For GEM1/GEM2: NO knowledge base, pure prompt mode
+                print(f"🔥 PURE PROMPT MODE ({prompt_type.upper()}): Skipping knowledge base")
                 kb_context, sources = "", []
+                
+                # Add file info for GEM1/GEM2 if files uploaded
+                if uploaded_files:
+                    file_list = [f["filename"] for f in uploaded_files]
+                    message += f"\n\nUploaded files: {', '.join(file_list)}"
             else:
-                # Only use knowledge base for general Q&A without files
-                print("🔥 GENERAL Q&A: Using knowledge base with SRIS AI")
-                kb_context, sources = self.retrieve_from_kb(message)
+                # For General: use knowledge base and file handling
+                if uploaded_files:
+                    print(
+                        f"🔥 SRIS AI MULTIMODAL: Will process {len(uploaded_files)} files directly"
+                    )
+                    file_list = [f["filename"] for f in uploaded_files]
+                    if request_type == "fill_form":
+                        message += f"\n\nFORM FILES TO FILL: {', '.join(file_list)}\nIMPORTANT: Preserve exact formatting and only fill blanks. Do not add any extra content."
+                    elif request_type == "analysis":
+                        message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide key insights and recommendations only. Do not repeat document content."
+                    else:
+                        message += f"\n\nFiles to analyze: {', '.join(file_list)}"
+                    
+                    print("🔥 FILE UPLOAD DETECTED: Skipping knowledge base, using SRIS AI directly")
+                    kb_context, sources = "", []
+                else:
+                    print("🔥 GENERAL Q&A: Using knowledge base with SRIS AI")
+                    kb_context, sources = self.retrieve_from_kb(message)
 
             # Generate response with your prompt and chat history
             bot_response = self.generate_response(
