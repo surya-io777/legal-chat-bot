@@ -104,13 +104,13 @@ function MessageBubble({ message }) {
       }
       // Regular paragraphs with markdown support
       else {
-        // Process markdown formatting
+        // Process markdown formatting - fix regex to properly remove symbols
         let processedLine = trimmedLine
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // **bold**
-          .replace(/\*(.*?)\*/g, '<em>$1</em>')              // *italic*
-          .replace(/^### (.*)/g, '<h3>$1</h3>')             // ### Header
-          .replace(/^## (.*)/g, '<h2>$1</h2>')              // ## Header
-          .replace(/^# (.*)/g, '<h1>$1</h1>');              // # Header
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')  // **bold**
+          .replace(/\*([^*]+)\*/g, '<em>$1</em>')              // *italic*
+          .replace(/^###\s+(.*)$/g, '<h3>$1</h3>')            // ### Header
+          .replace(/^##\s+(.*)$/g, '<h2>$1</h2>')             // ## Header
+          .replace(/^#\s+(.*)$/g, '<h1>$1</h1>');             // # Header
         
         // Check if it's a header
         if (processedLine.includes('<h1>') || processedLine.includes('<h2>') || processedLine.includes('<h3>')) {
