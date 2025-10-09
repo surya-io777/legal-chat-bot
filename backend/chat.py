@@ -178,7 +178,7 @@ Formatting Guidelines:
 - Start responses with "SRIS Juris Support states:"
 - Use clear, professional language
 - Structure responses with numbered lists and bullet points
-- Avoid markdown formatting symbols
+- Use **bold text** for important terms and emphasis
 - Use proper legal document structure when generating documents
 - Be comprehensive and precise in your analysis
 - Maintain context from previous messages in this conversation
@@ -187,6 +187,10 @@ Formatting Guidelines:
             # Use PURE prompt for GEM1/GEM2 - NO extra instructions
             custom_prompt = self.load_prompt_file(prompt_type)
             base_instructions = f"""{custom_prompt}
+
+IMPORTANT FORMATTING RULE:
+- Use **bold text** for important terms and emphasis
+- Use proper formatting for clear, readable output
 
 User Request: {user_query}"""
 
@@ -235,7 +239,8 @@ DOCUMENT GENERATION INSTRUCTIONS:
 - Use CAPITAL LETTERS for main titles and section headers
 - Structure with numbered clauses (1., 2., 3.)
 - Use proper legal indentation and spacing
-- NO asterisks, hashtags, or markdown symbols
+- Use **bold text** for emphasis and important terms
+- Use proper formatting for professional appearance
 - Make it professionally formatted and legally sound
 
 Generate a complete legal document:"""
@@ -247,7 +252,8 @@ TABLE GENERATION INSTRUCTIONS:
 - Use numbered lists (1., 2., 3.) for organization
 - Use clear headers in CAPITAL LETTERS
 - Present data in clean, readable format
-- NO pipes (|) or markdown table formatting
+- Use proper table formatting with clear structure
+- Use **bold text** for headers and emphasis
 
 Generate a well-structured table:"""
             else:
@@ -258,8 +264,8 @@ RESPONSE INSTRUCTIONS:
 - Use numbered lists (1., 2., 3.) for sequential information
 - Use bullet points (•) for key points
 - Structure in clear, readable paragraphs
-- Use CAPITAL LETTERS for emphasis instead of bold
-- NO asterisks, hashtags, or special symbols
+- Use **bold text** for emphasis and important terms
+- Use proper formatting for professional appearance
 
 Response:"""
 

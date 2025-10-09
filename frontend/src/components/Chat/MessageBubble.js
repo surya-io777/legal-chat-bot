@@ -102,17 +102,23 @@ function MessageBubble({ message }) {
           </Typography>
         );
       }
-      // Regular paragraphs
+      // Regular paragraphs with bold text support
       else {
+        // Convert **text** to bold
+        const processedLine = trimmedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
         formattedContent.push(
-          <Typography key={index} variant="body1" sx={{ 
-            mb: 0.8,
-            lineHeight: 1.6,
-            textAlign: 'justify',
-            textIndent: '20px'
-          }}>
-            {trimmedLine}
-          </Typography>
+          <Typography 
+            key={index} 
+            variant="body1" 
+            sx={{ 
+              mb: 0.8,
+              lineHeight: 1.6,
+              textAlign: 'justify',
+              textIndent: '20px'
+            }}
+            dangerouslySetInnerHTML={{ __html: processedLine }}
+          />
         );
       }
     });
