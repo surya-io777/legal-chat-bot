@@ -102,24 +102,45 @@ function MessageBubble({ message }) {
           </Typography>
         );
       }
-      // Regular paragraphs with bold text support
+      // Regular paragraphs with markdown support
       else {
-        // Convert **text** to bold
-        const processedLine = trimmedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Process markdown formatting
+        let processedLine = trimmedLine
+          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // **bold**
+          .replace(/\*(.*?)\*/g, '<em>$1</em>')              // *italic*
+          .replace(/^### (.*)/g, '<h3>$1</h3>')             // ### Header
+          .replace(/^## (.*)/g, '<h2>$1</h2>')              // ## Header
+          .replace(/^# (.*)/g, '<h1>$1</h1>');              // # Header
         
-        formattedContent.push(
-          <Typography 
-            key={index} 
-            variant="body1" 
-            sx={{ 
-              mb: 0.8,
-              lineHeight: 1.6,
-              textAlign: 'justify',
-              textIndent: '20px'
-            }}
-            dangerouslySetInnerHTML={{ __html: processedLine }}
-          />
-        );
+        // Check if it's a header
+        if (processedLine.includes('<h1>') || processedLine.includes('<h2>') || processedLine.includes('<h3>')) {
+          formattedContent.push(
+            <Typography 
+              key={index} 
+              variant="h6" 
+              sx={{ 
+                fontWeight: 'bold',
+                mt: 2,
+                mb: 1
+              }}
+              dangerouslySetInnerHTML={{ __html: processedLine }}
+            />
+          );
+        } else {
+          formattedContent.push(
+            <Typography 
+              key={index} 
+              variant="body1" 
+              sx={{ 
+                mb: 0.8,
+                lineHeight: 1.6,
+                textAlign: 'justify',
+                textIndent: '20px'
+              }}
+              dangerouslySetInnerHTML={{ __html: processedLine }}
+            />
+          );
+        }
       }
     });
     
