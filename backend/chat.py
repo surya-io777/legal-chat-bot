@@ -41,8 +41,30 @@ class ChatService:
         """Load prompt file based on type"""
         try:
             if prompt_type == "general":
-                # Retrieve the exact same answer from Gemini how it's giving
-                return "Provide comprehensive legal analysis and advice in detailed paragraph format. Write in a flowing, narrative style that thoroughly explains legal concepts, implications, and applications."
+                # Generate precise, structured responses
+                return """Provide precise, structured legal responses using this exact format:
+
+**WHAT IS IT?**
+Brief definition in 1-2 sentences.
+
+**KEY COMPONENTS:**
+• Component 1: Brief explanation
+• Component 2: Brief explanation  
+• Component 3: Brief explanation
+
+**IMPORTANT POINTS:**
+• Point 1: Concise detail
+• Point 2: Concise detail
+• Point 3: Concise detail
+
+Formatting Rules:
+- Use **bold** for headings and important terms
+- Use CAPITAL LETTERS for main section titles
+- Use bullet points (•) for lists
+- Keep responses concise and structured
+- Left-align all content
+- No center alignment
+- Be precise and direct"""
             elif prompt_type == "singularity-counsel-8":
                 prompt_path = os.path.join(os.path.dirname(__file__), "Singularity-Counsel-protocol8.0.txt")
             elif prompt_type == "singularity-counsel-11":
@@ -203,8 +225,15 @@ User Request: {user_query}"""
         # For custom prompts: Use pure prompt without any additional instructions
         if prompt_type in ["singularity-counsel-8", "singularity-counsel-11", "juridical-singularity", "gem1", "gem2"]:
             combined_prompt = base_instructions
+        elif prompt_type == "general":
+            # For General: Add structured formatting
+            combined_prompt = f"""{base_instructions}
+
+User Request: {user_query}
+
+Provide a structured response following the format above."""
         else:
-            # For General: Add request-type specific instructions
+            # For other request types: Add specific instructions
             if request_type == "fill_form":
                 combined_prompt = f"""{base_instructions}
 

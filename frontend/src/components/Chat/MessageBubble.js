@@ -40,8 +40,9 @@ function MessageBubble({ message }) {
             fontWeight: 'bold', 
             mt: 3, 
             mb: 2,
-            textAlign: 'center',
-            textDecoration: 'underline'
+            textAlign: 'left',
+            textDecoration: 'underline',
+            fontFamily: 'Roboto, Arial, sans-serif'
           }}>
             {trimmedLine}
           </Typography>
@@ -96,7 +97,7 @@ function MessageBubble({ message }) {
           <Typography key={index} variant="body1" sx={{ 
             fontWeight: 'bold',
             mb: 0.5,
-            textAlign: 'center'
+            textAlign: 'left'
           }}>
             {trimmedLine}
           </Typography>
@@ -134,8 +135,9 @@ function MessageBubble({ message }) {
               sx={{ 
                 mb: 0.8,
                 lineHeight: 1.6,
-                textAlign: 'justify',
-                textIndent: '20px'
+                textAlign: 'left',
+                fontFamily: 'Roboto, Arial, sans-serif',
+                fontSize: '14px'
               }}
               dangerouslySetInnerHTML={{ __html: processedLine }}
             />
