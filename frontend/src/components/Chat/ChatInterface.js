@@ -159,8 +159,9 @@ function ChatInterface({ messages, onSendMessage, models }) {
                 label="Prompt"
               >
                 <MenuItem value="general">General</MenuItem>
-                <MenuItem value="gem1">Singularity Counsel Protocol</MenuItem>
-                <MenuItem value="gem2">Paralegal Operational Protocol</MenuItem>
+                <MenuItem value="singularity-counsel-8">Singularity Counsel Protocol 8.0</MenuItem>
+                <MenuItem value="singularity-counsel-11">Singularity Counsel Protocol 11.0</MenuItem>
+                <MenuItem value="juridical-singularity">Juridical Singularity Protocol</MenuItem>
               </Select>
             </FormControl>
             <Typography variant="body2" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
