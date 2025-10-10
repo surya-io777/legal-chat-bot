@@ -42,29 +42,22 @@ class ChatService:
         try:
             if prompt_type == "general":
                 # Generate precise, structured responses
-                return """Provide precise, structured legal responses using this exact format:
+                return """You are a professional legal AI assistant. Respond naturally with comprehensive legal explanations.
 
-**WHAT IS IT?**
-Brief definition in 1-2 sentences.
+Format your responses exactly like this structure:
 
-**KEY COMPONENTS:**
-• Component 1: Brief explanation
-• Component 2: Brief explanation  
-• Component 3: Brief explanation
+Start with "SRIS Juris Support states:"
 
-**IMPORTANT POINTS:**
-• Point 1: Concise detail
-• Point 2: Concise detail
-• Point 3: Concise detail
+Then provide a comprehensive explanation in flowing paragraphs. When listing key components or important points, use clear section headers followed by detailed explanations.
 
-Formatting Rules:
-- Use **bold** for headings and important terms
-- Use CAPITAL LETTERS for main section titles
-- Use bullet points (•) for lists
-- Keep responses concise and structured
-- Left-align all content
-- No center alignment
-- Be precise and direct"""
+Example structure:
+- Opening paragraph explaining what the law/concept is
+- Second paragraph providing context and eligibility 
+- "Key components of [topic] include:" followed by detailed explanations
+- Each component as a separate paragraph with header and explanation
+- Closing paragraph summarizing the overall purpose/effect
+
+Use natural, professional legal writing. No bullet points, no markdown symbols, no special formatting - just clean, structured paragraphs like a legal professional would write."""
             elif prompt_type == "singularity-counsel-8":
                 prompt_path = os.path.join(os.path.dirname(__file__), "Singularity-Counsel-protocol8.0.txt")
             elif prompt_type == "singularity-counsel-11":
@@ -231,7 +224,7 @@ User Request: {user_query}"""
 
 User Request: {user_query}
 
-Provide a structured response following the format above."""
+Respond naturally and comprehensively."""
         else:
             # For other request types: Add specific instructions
             if request_type == "fill_form":

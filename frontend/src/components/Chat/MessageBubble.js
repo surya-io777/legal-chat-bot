@@ -105,13 +105,16 @@ function MessageBubble({ message }) {
       }
       // Regular paragraphs with markdown support
       else {
-        // Process markdown formatting - fix regex to properly remove symbols
+        // Clean up any markdown symbols and process formatting
         let processedLine = trimmedLine
           .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')  // **bold**
-          .replace(/\*([^*]+)\*/g, '<em>$1</em>')              // *italic*
-          .replace(/^###\s+(.*)$/g, '<h3>$1</h3>')            // ### Header
-          .replace(/^##\s+(.*)$/g, '<h2>$1</h2>')             // ## Header
-          .replace(/^#\s+(.*)$/g, '<h1>$1</h1>');             // # Header
+          .replace(/\*([^*]+)\*/g, '$1')                       // Remove single *
+          .replace(/^###\s+(.*)$/g, '$1')                     // Remove ### 
+          .replace(/^##\s+(.*)$/g, '$1')                      // Remove ##
+          .replace(/^#\s+(.*)$/g, '$1')                       // Remove #
+          .replace(/\*\*/g, '')                               // Remove remaining **
+          .replace(/##/g, '')                                 // Remove remaining ##
+          .replace(/#/g, '');                                 // Remove remaining #
         
         // Check if it's a header
         if (processedLine.includes('<h1>') || processedLine.includes('<h2>') || processedLine.includes('<h3>')) {
@@ -133,11 +136,12 @@ function MessageBubble({ message }) {
               key={index} 
               variant="body1" 
               sx={{ 
-                mb: 0.8,
-                lineHeight: 1.6,
+                mb: 1,
+                lineHeight: 1.7,
                 textAlign: 'left',
-                fontFamily: 'Roboto, Arial, sans-serif',
-                fontSize: '14px'
+                fontFamily: 'Roboto, -apple-system, BlinkMacSystemFont, sans-serif',
+                fontSize: '15px',
+                color: '#1f1f1f'
               }}
               dangerouslySetInnerHTML={{ __html: processedLine }}
             />
@@ -227,8 +231,10 @@ function MessageBubble({ message }) {
         sx={{ 
           p: 2, 
           maxWidth: '70%',
-          bgcolor: isUser ? 'primary.main' : 'grey.100',
-          color: isUser ? 'white' : 'text.primary'
+          bgcolor: isUser ? 'primary.main' : 'white',
+          color: isUser ? 'white' : 'text.primary',
+          border: isUser ? 'none' : '1px solid #e0e0e0',
+          boxShadow: isUser ? 2 : 1
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
