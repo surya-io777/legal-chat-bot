@@ -41,8 +41,14 @@ class ChatService:
         """Load prompt file based on type"""
         try:
             if prompt_type == "general":
-                # Use default Gemini behavior without custom prompt
-                return "You are a professional legal AI assistant."
+                # Retrieve the exact same answer from Gemini how it's giving
+                return "Provide comprehensive legal analysis and advice in detailed paragraph format. Write in a flowing, narrative style that thoroughly explains legal concepts, implications, and applications."
+            elif prompt_type == "singularity-counsel-8":
+                prompt_path = os.path.join(os.path.dirname(__file__), "Singularity-Counsel-protocol8.0.txt")
+            elif prompt_type == "singularity-counsel-11":
+                prompt_path = os.path.join(os.path.dirname(__file__), "Singularity-Counsel-protocol11.0.txt")
+            elif prompt_type == "juridical-singularity":
+                prompt_path = os.path.join(os.path.dirname(__file__), "Juridical-singularity-protocol.txt")
             elif prompt_type == "gem1":
                 prompt_path = os.path.join(os.path.dirname(__file__), "gem1.txt")
             elif prompt_type == "gem2":
@@ -116,7 +122,7 @@ class ChatService:
             "assess", "compare", "comparison", "deep dive", "deep analysis",
             "detailed analysis", "comprehensive review", "thorough analysis",
             "extract", "summarize", "summary", "breakdown", "insights",
-            "key points", "important points", "findings", "observations",
+            "findings", "observations",
             "note about", "notes on", "report on", "overview of"
         ]
 
@@ -177,7 +183,7 @@ User Request: {user_query}
 Formatting Guidelines:
 - Start responses with "SRIS Juris Support states:"
 - Use clear, professional language
-- Structure responses with numbered lists and bullet points
+- Provide comprehensive explanations in flowing paragraph format
 - Use **bold text** for important terms and emphasis
 - Use proper legal document structure when generating documents
 - Be comprehensive and precise in your analysis
@@ -194,8 +200,8 @@ IMPORTANT FORMATTING RULE:
 
 User Request: {user_query}"""
 
-        # For GEM1/GEM2: Use pure prompt without any additional instructions
-        if prompt_type in ["gem1", "gem2"]:
+        # For custom prompts: Use pure prompt without any additional instructions
+        if prompt_type in ["singularity-counsel-8", "singularity-counsel-11", "juridical-singularity", "gem1", "gem2"]:
             combined_prompt = base_instructions
         else:
             # For General: Add request-type specific instructions
@@ -219,7 +225,7 @@ Fill the form exactly as provided:"""
 
 DEEP ANALYSIS INSTRUCTIONS:
 - Perform comprehensive, detailed analysis of all uploaded content
-- Extract key insights, patterns, and important information
+- Provide comprehensive analysis with detailed explanations
 - Compare different sections, clauses, or documents if multiple files
 - Identify legal implications, risks, and opportunities
 - Provide detailed breakdown of structure, content, and meaning
@@ -262,7 +268,7 @@ Generate a well-structured table:"""
 RESPONSE INSTRUCTIONS:
 - Provide detailed legal analysis and advice
 - Use numbered lists (1., 2., 3.) for sequential information
-- Use bullet points (•) for key points
+- Write in flowing, comprehensive paragraphs
 - Structure in clear, readable paragraphs
 - Use **bold text** for emphasis and important terms
 - Use proper formatting for professional appearance
@@ -365,7 +371,7 @@ Response:"""
                 if request_type == "fill_form":
                     message += f"\n\nFORM FILES TO FILL: {', '.join(file_list)}\nIMPORTANT: Preserve exact formatting and only fill blanks. Do not add any extra content."
                 elif request_type == "analysis":
-                    message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide key insights and recommendations only. Do not repeat document content."
+                    message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide comprehensive legal analysis in detailed paragraph format. Explain thoroughly without using bullet points."
                 else:
                     message += f"\n\nFiles to analyze: {', '.join(file_list)}"
 
