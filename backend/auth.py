@@ -7,7 +7,7 @@ from jose import jwt, JWTError
 
 cognito = boto3.client("cognito-idp", region_name="us-east-1")
 USER_POOL_ID = "us-east-1_9sajhw6fR"
-CLIENT_ID = "5dtpjt0i38tnm9dtj4scigaras"
+CLIENT_ID = "2g81deb4kgrp8tm185hpa25jj"
 CLIENT_SECRET = None  # We'll disable this
 
 

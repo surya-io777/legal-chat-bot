@@ -6,6 +6,7 @@ from utils import generate_pdf, generate_table, generate_legal_document
 import os
 import google.generativeai as genai
 from dotenv import load_dotenv
+import re
 
 # Load environment variables
 load_dotenv()
@@ -14,7 +15,6 @@ load_dotenv()
 class ChatService:
     def __init__(self):
         self.dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
-        # Removed bedrock_runtime - only using Gemini
         try:
             self.bedrock_agent = boto3.client(
                 "bedrock-agent-runtime", region_name="us-east-1"
@@ -38,47 +38,135 @@ class ChatService:
         self.models = {"gemini-pro": "gemini-2.5-pro"}
 
     def load_prompt_file(self, prompt_type="general"):
-        """Load prompt file based on type"""
+        """Load prompt file based on type - UPDATED for structured output"""
         try:
             if prompt_type == "general":
-                # Generate precise, structured responses
-                return """You are a professional legal AI assistant. Respond naturally with comprehensive legal explanations.
+                # Clear structured formatting guidance
+                return """You are a professional legal AI assistant named SRIS Juris Support.
 
-Format your responses exactly like this structure:
+Format ALL responses with this EXACT structure:
 
-Start with "SRIS Juris Support states:"
+SRIS Juris Support states:
 
-Then provide a comprehensive explanation in flowing paragraphs. When listing key components or important points, use clear section headers followed by detailed explanations.
+[Opening paragraph explaining the law/concept]
 
-Example structure:
-- Opening paragraph explaining what the law/concept is
-- Second paragraph providing context and eligibility 
-- "Key components of [topic] include:" followed by detailed explanations
-- Each component as a separate paragraph with header and explanation
-- Closing paragraph summarizing the overall purpose/effect
+[Context paragraph about scope, eligibility, or background]
 
-Use natural, professional legal writing. No bullet points, no markdown symbols, no special formatting - just clean, structured paragraphs like a legal professional would write."""
+Key components of this statute include:
+
+- **Probation:** [Detailed explanation in full paragraph form]
+
+- **Conditions of Probation:** [Comprehensive explanation with details]
+
+- **Dismissal of Charges:** [Complete explanation of this component]
+
+- **Violation:** [Full explanation of consequences]
+
+FORMATTING RULES:
+- Always start with "SRIS Juris Support states:"
+- Use **bold text** for component names and section headers
+- Write explanations in flowing, professional paragraphs
+- Use bullet points with bold headers for key components
+- Maintain clear visual hierarchy
+- Never collapse sections into unformatted blocks
+
+Example response structure:
+
+SRIS Juris Support states:
+
+Virginia Code § 18.2-57.3 provides a legal pathway for individuals charged for the first time with assault and battery against a family or household member to have the charge dismissed. This is often referred to as a "first offender program" or "deferred disposition."
+
+Under this statute, a court can defer the proceedings without a finding of guilt and place the accused individual on probation. To be eligible, the person generally must not have any prior convictions for similar offenses.
+
+Key components of this statute include:
+
+- **Probation:** The accused is placed on local community-based probation for a period of not less than two years.
+
+- **Conditions of Probation:** The individual must maintain good behavior and successfully complete all court-ordered treatment or education programs. These programs often include anger management, substance abuse treatment, or other relevant counseling as determined by an assessment.
+
+- **Dismissal of Charges:** Upon successful fulfillment of all terms and conditions of probation, the court will discharge the person and dismiss the proceedings. While this dismissal is without an adjudication of guilt, it is considered a conviction for the purpose of determining eligibility for this program in any subsequent proceedings.
+
+- **Violation:** If the individual violates the terms of their probation, the court may enter an adjudication of guilt and proceed with sentencing on the original charge.
+
+This statute allows a first-time offender the opportunity to avoid a criminal conviction for domestic assault by complying with court-supervised probation and rehabilitation."""
+
             elif prompt_type == "singularity-counsel-8":
-                prompt_path = os.path.join(os.path.dirname(__file__), "Singularity-Counsel-protocol8.0.txt")
+                prompt_path = os.path.join(
+                    os.path.dirname(__file__), "Singularity-Counsel-protocol8.0.txt"
+                )
             elif prompt_type == "singularity-counsel-11":
-                prompt_path = os.path.join(os.path.dirname(__file__), "Singularity-Counsel-protocol11.0.txt")
+                prompt_path = os.path.join(
+                    os.path.dirname(__file__), "Singularity-Counsel-protocol11.0.txt"
+                )
             elif prompt_type == "juridical-singularity":
-                prompt_path = os.path.join(os.path.dirname(__file__), "Juridical-singularity-protocol.txt")
+                prompt_path = os.path.join(
+                    os.path.dirname(__file__), "Juridical-singularity-protocol.txt"
+                )
             elif prompt_type == "gem1":
                 prompt_path = os.path.join(os.path.dirname(__file__), "gem1.txt")
             elif prompt_type == "gem2":
                 prompt_path = os.path.join(os.path.dirname(__file__), "gem2.txt")
             else:
                 prompt_path = os.path.join(os.path.dirname(__file__), "prompt.txt")
-            
+
             with open(prompt_path, "r", encoding="utf-8") as file:
                 content = file.read()
-                print(f"✅ PROMPT LOADED ({prompt_type}): {len(content)} characters from {prompt_path}")
+                print(
+                    f"✅ PROMPT LOADED ({prompt_type}): {len(content)} characters from {prompt_path}"
+                )
                 print(f"✅ PROMPT PREVIEW: {content[:200]}...")
                 return content
         except Exception as e:
             print(f"❌ ERROR loading {prompt_type} prompt: {e}")
             return "You are a professional legal AI assistant."
+
+    # NEW: Universal formatting wrapper for ALL protocols
+    def get_formatting_instructions(self):
+        """Universal formatting rules applied to all protocols"""
+        return """
+
+=== MANDATORY OUTPUT FORMATTING (APPLIES TO ALL RESPONSES) ===
+
+1. ALWAYS start your response with: "SRIS Juris Support states:"
+
+2. Structure your response in clear sections with proper spacing:
+   - Opening paragraph (explanation of the concept/law)
+   - Context paragraph (scope, eligibility, background)
+   - Detailed components with bold headers
+
+3. When listing key components, use this EXACT format:
+   - **Component Name:** Detailed explanation in paragraph form
+   - **Next Component:** Full explanation with details
+   - **Another Component:** Comprehensive explanation
+
+4. FORMATTING REQUIREMENTS:
+   - Use **bold text** for all section headers and key terms
+   - Write in flowing, professional paragraphs (not bullet-only lists)
+   - Maintain clear visual hierarchy with spacing
+   - Use bullet points ONLY for organizing key components
+   - Each component explanation must be in full sentence/paragraph form
+
+5. Example structure to follow:
+
+SRIS Juris Support states:
+
+[Opening paragraph explaining the main concept]
+
+[Context paragraph with relevant background]
+
+Key components include:
+
+- **First Component:** Complete explanation in professional paragraph form with all relevant details.
+
+- **Second Component:** Thorough explanation with comprehensive information presented clearly.
+
+- **Third Component:** Full details presented in structured, readable format.
+
+[Closing paragraph if needed]
+
+=== END FORMATTING RULES ===
+
+"""
 
     def retrieve_from_kb(self, query):
         """Retrieve relevant documents from Knowledge Base for general Q&A only"""
@@ -101,7 +189,9 @@ Use natural, professional legal writing. No bullet points, no markdown symbols, 
                 sources.append(source)
 
             if not context.strip():
-                print("No relevant context found in knowledge base, using SRIS AI directly")
+                print(
+                    "No relevant context found in knowledge base, using SRIS AI directly"
+                )
                 return "", []
 
             return context, sources
@@ -113,38 +203,103 @@ Use natural, professional legal writing. No bullet points, no markdown symbols, 
     def detect_document_request(self, message):
         """Detect if user wants document generation or analysis"""
         doc_keywords = [
-            "generate", "create", "draft", "prepare", "make", "write", "compose",
-            "document", "agreement", "contract", "petition", "pdf", "output",
-            "generate document", "create document", "prepare document",
-            "draft agreement", "create agreement", "prepare petition",
-            "generate pdf", "create pdf", "make document", "output pdf",
-            "prepare contract", "draft contract", "create legal document",
-            "make agreement", "write document", "compose document",
-            "give it as output", "output as pdf", "pdf file",
-            "save as pdf", "download pdf", "export pdf", "generate output",
-            "in pdf", "as pdf", "pdf format", "output in pdf",
+            "generate",
+            "create",
+            "draft",
+            "prepare",
+            "make",
+            "write",
+            "compose",
+            "document",
+            "agreement",
+            "contract",
+            "petition",
+            "pdf",
+            "output",
+            "generate document",
+            "create document",
+            "prepare document",
+            "draft agreement",
+            "create agreement",
+            "prepare petition",
+            "generate pdf",
+            "create pdf",
+            "make document",
+            "output pdf",
+            "prepare contract",
+            "draft contract",
+            "create legal document",
+            "make agreement",
+            "write document",
+            "compose document",
+            "give it as output",
+            "output as pdf",
+            "pdf file",
+            "save as pdf",
+            "download pdf",
+            "export pdf",
+            "generate output",
+            "in pdf",
+            "as pdf",
+            "pdf format",
+            "output in pdf",
         ]
 
         fill_keywords = [
-            "fill", "complete", "fill out", "fill in", "complete the form",
-            "fill the blanks", "fill answers", "complete answers",
-            "fill the form", "complete the document", "fill missing",
-            "answer the questions", "provide answers", "complete fields"
+            "fill",
+            "complete",
+            "fill out",
+            "fill in",
+            "complete the form",
+            "fill the blanks",
+            "fill answers",
+            "complete answers",
+            "fill the form",
+            "complete the document",
+            "fill missing",
+            "answer the questions",
+            "provide answers",
+            "complete fields",
         ]
 
         analysis_keywords = [
-            "analyze", "analysis", "review", "examine", "study", "evaluate",
-            "assess", "compare", "comparison", "deep dive", "deep analysis",
-            "detailed analysis", "comprehensive review", "thorough analysis",
-            "extract", "summarize", "summary", "breakdown", "insights",
-            "findings", "observations",
-            "note about", "notes on", "report on", "overview of"
+            "analyze",
+            "analysis",
+            "review",
+            "examine",
+            "study",
+            "evaluate",
+            "assess",
+            "compare",
+            "comparison",
+            "deep dive",
+            "deep analysis",
+            "detailed analysis",
+            "comprehensive review",
+            "thorough analysis",
+            "extract",
+            "summarize",
+            "summary",
+            "breakdown",
+            "insights",
+            "findings",
+            "observations",
+            "note about",
+            "notes on",
+            "report on",
+            "overview of",
         ]
 
         table_keywords = [
-            "create table", "generate table", "make table",
-            "create chart", "generate chart", "show table",
-            "table format", "tabular", "spreadsheet",
+            "create table",
+            "generate table",
+            "make table",
+            "create chart",
+            "generate chart",
+            "show table",
+            "table format",
+            "tabular",
+            "spreadsheet",
         ]
 
         message_lower = message.lower()
@@ -168,6 +323,48 @@ Use natural, professional legal writing. No bullet points, no markdown symbols, 
             print(f"🔥 CHAT REQUEST: {message_lower}")
             return "chat"
 
+    def format_legal_response(self, response_text):
+        """Ensure response has proper bold headers and structure"""
+        # Ensure it starts with SRIS Juris Support states:
+        if not response_text.strip().startswith("SRIS Juris Support states:"):
+            response_text = "SRIS Juris Support states:\n\n" + response_text.strip()
+
+        # Bold key section names if not already bolded
+        legal_terms = [
+            "Probation",
+            "Conditions of Probation",
+            "Dismissal of Charges",
+            "Violation",
+            "Key components",
+            "Requirements",
+            "Eligibility",
+            "Core Prohibitions",
+            "Penalties",
+            "Elements",
+            "Breakdown",
+            "Analysis",
+            "Overview",
+            "Summary",
+            "Findings",
+            "Recommendations",
+            "General Threats",
+            "Threats on School Property",
+            "Electronic Communication",
+            "Reasonable Apprehension",
+            "Classification",
+            "Sentencing",
+        ]
+
+        for term in legal_terms:
+            # Bold after bullet points if not already bolded
+            response_text = re.sub(f"- {term}:", f"- **{term}:**", response_text)
+            # Bold at line start if not already bolded
+            response_text = re.sub(
+                f"^{term}:", f"**{term}:**", response_text, flags=re.MULTILINE
+            )
+
+        return response_text
+
     def generate_response(
         self,
         user_query,
@@ -178,15 +375,14 @@ Use natural, professional legal writing. No bullet points, no markdown symbols, 
         chat_history="",
         prompt_type="general",
     ):
-        """Generate response using Gemini 2.5 Pro"""
+        """Generate response using Gemini 2.5 Pro - UPDATED for consistent formatting across all protocols"""
 
         model_id = self.models["gemini-pro"]
 
-        # Load appropriate prompt based on selection
+        # UPDATED: All protocols now get standardized formatting
         if prompt_type == "general":
-            # Use standard instructions for General (no knowledge base)
-            base_instructions = f"""
-You are a professional legal AI assistant. Provide comprehensive legal analysis and advice.
+            # Use built-in structured prompt for General mode
+            base_instructions = f"""{self.load_prompt_file("general")}
 
 Chat History (for context continuity):
 {chat_history}
@@ -195,40 +391,34 @@ User Instructions: {user_instructions}
 
 User Request: {user_query}
 
-Formatting Guidelines:
-- Start responses with "SRIS Juris Support states:"
-- Use clear, professional language
-- Provide comprehensive explanations in flowing paragraph format
-- Use **bold text** for important terms and emphasis
-- Use proper legal document structure when generating documents
-- Be comprehensive and precise in your analysis
-- Maintain context from previous messages in this conversation
-"""
+IMPORTANT: Follow the exact formatting structure shown above. Use bold headers and clear paragraph organization."""
+
         else:
-            # Use PURE prompt for GEM1/GEM2 - NO extra instructions
+            # UPDATED: Custom protocols get their content + universal formatting wrapper
             custom_prompt = self.load_prompt_file(prompt_type)
+            formatting_rules = self.get_formatting_instructions()
+
             base_instructions = f"""{custom_prompt}
 
-IMPORTANT FORMATTING RULE:
-- Use **bold text** for important terms and emphasis
-- Use proper formatting for clear, readable output
+{formatting_rules}
+
+CRITICAL INSTRUCTIONS:
+- Apply the custom protocol logic above
+- But ALWAYS follow the mandatory formatting rules for output structure
+- Combine your specialized knowledge with professional formatting
+- Use **bold text** for headers and key terms
+- Maintain structured, readable output
+
+Chat History (for context continuity):
+{chat_history}
+
+User Instructions: {user_instructions}
 
 User Request: {user_query}"""
 
-        # For custom prompts: Use pure prompt without any additional instructions
-        if prompt_type in ["singularity-counsel-8", "singularity-counsel-11", "juridical-singularity", "gem1", "gem2"]:
-            combined_prompt = base_instructions
-        elif prompt_type == "general":
-            # For General: Add structured formatting
+        # Build final prompt based on request type
+        if request_type == "fill_form":
             combined_prompt = f"""{base_instructions}
-
-User Request: {user_query}
-
-Respond naturally and comprehensively."""
-        else:
-            # For other request types: Add specific instructions
-            if request_type == "fill_form":
-                combined_prompt = f"""{base_instructions}
 
 FORM FILLING INSTRUCTIONS:
 - PRESERVE the EXACT original formatting, titles, bold text, and structure
@@ -242,27 +432,34 @@ FORM FILLING INSTRUCTIONS:
 - Output ONLY the original document with filled blanks
 
 Fill the form exactly as provided:"""
-            elif request_type == "analysis":
-                combined_prompt = f"""{base_instructions}
+
+        elif request_type == "analysis":
+            combined_prompt = f"""{base_instructions}
 
 DEEP ANALYSIS INSTRUCTIONS:
-- Perform comprehensive, detailed analysis of all uploaded content
+- Follow the structured format: Start with "SRIS Juris Support states:"
+- Perform comprehensive, detailed analysis with bold section headers
+- Use this structure:
+  * Opening paragraph explaining what you're analyzing
+  * Context paragraph with background
+  * Key findings with **bold headers:** and detailed explanations
 - Provide comprehensive analysis with detailed explanations
 - Compare different sections, clauses, or documents if multiple files
 - Identify legal implications, risks, and opportunities
-- Provide detailed breakdown of structure, content, and meaning
 - Include specific quotes and references from the documents
 - Analyze legal language, terms, and their significance
-- Compare with standard legal practices and requirements
 - Highlight any unusual clauses, missing elements, or concerns
 - Provide actionable insights and recommendations
 - Be thorough and comprehensive in your analysis
+- Maintain professional formatting throughout
 
 Provide deep analysis:"""
-            elif request_type == "document":
-                combined_prompt = f"""{base_instructions}
+
+        elif request_type == "document":
+            combined_prompt = f"""{base_instructions}
 
 DOCUMENT GENERATION INSTRUCTIONS:
+- Start with "SRIS Juris Support states:" if providing explanation
 - Create a comprehensive legal document with proper formatting
 - Use CAPITAL LETTERS for main titles and section headers
 - Structure with numbered clauses (1., 2., 3.)
@@ -272,37 +469,28 @@ DOCUMENT GENERATION INSTRUCTIONS:
 - Make it professionally formatted and legally sound
 
 Generate a complete legal document:"""
-            elif request_type == "table":
-                combined_prompt = f"""{base_instructions}
+
+        elif request_type == "table":
+            combined_prompt = f"""{base_instructions}
 
 TABLE GENERATION INSTRUCTIONS:
+- Start with "SRIS Juris Support states:"
 - Create structured data without table symbols
 - Use numbered lists (1., 2., 3.) for organization
-- Use clear headers in CAPITAL LETTERS
+- Use clear headers with **bold text**
 - Present data in clean, readable format
 - Use proper table formatting with clear structure
-- Use **bold text** for headers and emphasis
+- Maintain professional formatting
 
 Generate a well-structured table:"""
-            else:
-                combined_prompt = f"""{base_instructions}
 
-RESPONSE INSTRUCTIONS:
-- Provide detailed legal analysis and advice
-- Use numbered lists (1., 2., 3.) for sequential information
-- Write in flowing, comprehensive paragraphs
-- Structure in clear, readable paragraphs
-- Use **bold text** for emphasis and important terms
-- Use proper formatting for professional appearance
+        else:
+            combined_prompt = base_instructions
 
-Response:"""
-
-        print(f"🔥 GENERATING RESPONSE WITH SRIS AI SYSTEM: {model_name}")
+        print(f"🔥 GENERATING RESPONSE WITH SRIS AI ({prompt_type.upper()})")
         print(f"🔥 PROMPT LENGTH: {len(combined_prompt)} characters")
-        print(f"🔥 PROMPT STARTS WITH: {combined_prompt[:300]}...")
 
         try:
-            # Only Gemini 2.5 Pro with multimodal capabilities
             model = genai.GenerativeModel(model_id)
 
             # Check if there are uploaded files for Gemini multimodal processing
@@ -314,7 +502,6 @@ Response:"""
                     f"🔥 SRIS AI MULTIMODAL: Processing with {len(self._current_uploaded_files)} files"
                 )
 
-                # Prepare content with files for Gemini
                 content_parts = [combined_prompt]
 
                 for file_info in self._current_uploaded_files:
@@ -325,7 +512,6 @@ Response:"""
                         print(
                             f"📄 Adding multimodal file to SRIS AI: {file_info['filename']}"
                         )
-                        # Upload file to Gemini for multimodal processing
                         uploaded_file = genai.upload_file(file_info["path"])
                         content_parts.append(uploaded_file)
 
@@ -334,6 +520,10 @@ Response:"""
                 response = model.generate_content(combined_prompt)
 
             result_text = response.text
+
+            # Post-process for consistent bold formatting across all protocols
+            result_text = self.format_legal_response(result_text)
+
             print(f"✅ SRIS AI RESPONSE LENGTH: {len(result_text)} characters")
             return result_text
 
@@ -381,9 +571,11 @@ Response:"""
             self._current_uploaded_files = uploaded_files
 
             # KNOWLEDGE BASE DISABLED - All modes use pure prompts
-            print(f"🔥 PURE PROMPT MODE ({prompt_type.upper()}): Knowledge base disabled")
+            print(
+                f"🔥 PURE PROMPT MODE ({prompt_type.upper()}): Knowledge base disabled"
+            )
             kb_context, sources = "", []
-            
+
             # Add file info if files uploaded
             if uploaded_files:
                 print(
@@ -393,7 +585,7 @@ Response:"""
                 if request_type == "fill_form":
                     message += f"\n\nFORM FILES TO FILL: {', '.join(file_list)}\nIMPORTANT: Preserve exact formatting and only fill blanks. Do not add any extra content."
                 elif request_type == "analysis":
-                    message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide comprehensive legal analysis in detailed paragraph format. Explain thoroughly without using bullet points."
+                    message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide comprehensive legal analysis following the structured format with bold headers."
                 else:
                     message += f"\n\nFiles to analyze: {', '.join(file_list)}"
 
@@ -439,8 +631,16 @@ Response:"""
                         bot_response, session_id, message
                     )
                     if pdf_content:
-                        filename = f"analysis_report_{session_id}.pdf" if request_type == "analysis" else f"legal_document_{session_id}.pdf"
-                        title = f"Analysis Report - {message[:30]}..." if request_type == "analysis" else f"Legal Document - {message[:30]}..."
+                        filename = (
+                            f"analysis_report_{session_id}.pdf"
+                            if request_type == "analysis"
+                            else f"legal_document_{session_id}.pdf"
+                        )
+                        title = (
+                            f"Analysis Report - {message[:30]}..."
+                            if request_type == "analysis"
+                            else f"Legal Document - {message[:30]}..."
+                        )
                         output_files.append(
                             {
                                 "type": "pdf",
@@ -510,9 +710,7 @@ Response:"""
                     continue
 
                 if filename.lower().endswith(".pdf"):
-                    # Extract text from PDF with better error handling
                     try:
-                        # Try multiple PDF libraries
                         text = ""
 
                         # Method 1: pypdf
@@ -542,7 +740,6 @@ Response:"""
 
                         except ImportError:
                             print("❌ pypdf not available, trying PyPDF2")
-                            # Method 2: PyPDF2 fallback
                             try:
                                 import PyPDF2
 
@@ -566,7 +763,6 @@ Response:"""
                                 f"✅ Successfully extracted {len(clean_text)} characters from {filename}"
                             )
                         else:
-                            # Try OCR for image-based PDFs
                             print(f"🔍 No text found, attempting OCR for {filename}")
                             ocr_text = self.extract_pdf_with_ocr(filepath, filename)
                             if ocr_text.strip():
@@ -592,12 +788,11 @@ Response:"""
                         )
 
                 elif filename.lower().endswith((".txt", ".doc", ".docx")):
-                    # Read text files
                     with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                         content = f.read()
                     file_contents.append(
                         f"File: {filename}\nContent: {content[:3000]}..."
-                    )  # Increased limit
+                    )
 
                 else:
                     file_contents.append(f"File: {filename} (unsupported format)")
@@ -623,56 +818,66 @@ Response:"""
             import re
 
             buffer = BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=inch, rightMargin=inch)
+            doc = SimpleDocTemplate(
+                buffer, pagesize=letter, leftMargin=inch, rightMargin=inch
+            )
             styles = getSampleStyleSheet()
             story = []
 
             # Create styles for normal and bold text
             normal_style = ParagraphStyle(
-                'NormalStyle',
-                parent=styles['Normal'],
-                fontName='Times-Roman',
+                "NormalStyle",
+                parent=styles["Normal"],
+                fontName="Times-Roman",
                 fontSize=11,
                 leading=14,
                 leftIndent=0,
                 rightIndent=0,
                 spaceAfter=6,
-                spaceBefore=0
+                spaceBefore=0,
             )
-            
+
             bold_style = ParagraphStyle(
-                'BoldStyle',
-                parent=styles['Normal'],
-                fontName='Times-Bold',
+                "BoldStyle",
+                parent=styles["Normal"],
+                fontName="Times-Bold",
                 fontSize=12,
                 leading=16,
                 leftIndent=0,
                 rightIndent=0,
                 spaceAfter=8,
-                spaceBefore=4
+                spaceBefore=4,
             )
 
             # Clean content - remove any AI intro text
-            clean_content = content.replace('SRIS Juris Support states:', '').strip()
-            
+            clean_content = content.replace("SRIS Juris Support states:", "").strip()
+
             # Process lines to detect formatting
-            lines = clean_content.split('\n')
+            lines = clean_content.split("\n")
             for line in lines:
                 line = line.strip()
                 if not line:
                     story.append(Spacer(1, 6))
                     continue
-                
-                # Detect if line should be bold (all caps, titles, headers)
-                if (line.isupper() and len(line) > 3) or \
-                   any(word in line.upper() for word in ['AGREEMENT', 'CONTRACT', 'PETITION', 'WHEREAS', 'NOW THEREFORE']):
-                    # Bold formatting for titles and headers
+
+                # Detect markdown bold **text** and convert to ReportLab format
+                if "**" in line:
+                    # Convert markdown bold to ReportLab bold tags
+                    line = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", line)
+                    para = Paragraph(line, normal_style)
+                    story.append(para)
+                elif line.isupper() and len(line) > 3:
+                    # Bold formatting for ALL CAPS titles
                     para = Paragraph(f"<b>{line}</b>", bold_style)
+                    story.append(para)
+                elif line.startswith("- "):
+                    # Bullet points - preserve bold markers
+                    line = re.sub(r"- \*\*([^*]+)\*\*:", r"- <b>\1:</b>", line)
+                    para = Paragraph(line, normal_style)
                     story.append(para)
                 else:
                     # Regular text with preserved spacing
-                    # Convert multiple spaces to non-breaking spaces
-                    formatted_line = line.replace('  ', '&nbsp;&nbsp;')
+                    formatted_line = line.replace("  ", "&nbsp;&nbsp;")
                     para = Paragraph(formatted_line, normal_style)
                     story.append(para)
 
@@ -689,13 +894,11 @@ Response:"""
     def generate_table_content(self, content, session_id):
         """Generate CSV content for frontend download"""
         try:
-            # Extract table data from content
             lines = content.split("\n")
             csv_lines = []
 
             for line in lines:
                 if "|" in line:
-                    # Convert table format to CSV
                     csv_line = line.replace("|", ",").strip()
                     if csv_line.startswith(","):
                         csv_line = csv_line[1:]
@@ -712,7 +915,6 @@ Response:"""
     def extract_pdf_with_ocr(self, filepath, filename):
         """Extract text from image-based PDFs using OCR"""
         try:
-            # Method 1: Try pytesseract + pdf2image
             try:
                 import pytesseract
                 from pdf2image import convert_from_path
@@ -787,7 +989,7 @@ Response:"""
                 FilterExpression="session_id = :sid",
                 ExpressionAttributeValues={":uid": user_id, ":sid": session_id},
                 ScanIndexForward=False,
-                Limit=limit * 2,  # Get more to account for user/assistant pairs
+                Limit=limit * 2,
             )
 
             messages = response["Items"]

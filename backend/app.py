@@ -7,14 +7,21 @@ import os
 import tempfile
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=['http://localhost:3000'], supports_credentials=True)
 
 chat_service = ChatService()
 
 @app.route('/api/auth/signup', methods=['POST'])
 def signup():
-    data = request.json
-    return create_user(data['email'], data['password'], data['name'])
+    try:
+        data = request.json
+        if not data or not all(k in data for k in ['email', 'password', 'name']):
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+        
+        result = create_user(data['email'], data['password'], data['name'])
+        return jsonify(result), 200 if result.get('success') else 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/auth/signin', methods=['POST'])
 def signin():

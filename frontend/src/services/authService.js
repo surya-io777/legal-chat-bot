@@ -1,20 +1,34 @@
 import axios from 'axios';
 
-const API_BASE = 'http://44.204.88.183:5000/api';
+const API_BASE = 'http://localhost:5000/api';
 
 export const authService = {
   async signin(email, password) {
-    const response = await axios.post(`${API_BASE}/auth/signin`, {
-      email, password
-    });
-    return response.data;
+    try {
+      const response = await axios.post(`${API_BASE}/auth/signin`, {
+        email, password
+      });
+      return response.data;
+    } catch (error) {
+      if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
+        throw new Error('Cannot connect to server. Please check if the backend is running on port 5000.');
+      }
+      throw error;
+    }
   },
 
   async signup(email, password, name) {
-    const response = await axios.post(`${API_BASE}/auth/signup`, {
-      email, password, name
-    });
-    return response.data;
+    try {
+      const response = await axios.post(`${API_BASE}/auth/signup`, {
+        email, password, name
+      });
+      return response.data;
+    } catch (error) {
+      if (error.code === 'ECONNREFUSED' || error.message.includes('Network Error')) {
+        throw new Error('Cannot connect to server. Please check if the backend is running on port 5000.');
+      }
+      throw error;
+    }
   },
 
   async verifyEmail(email, code) {
