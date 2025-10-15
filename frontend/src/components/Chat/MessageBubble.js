@@ -242,13 +242,6 @@ function MessageBubble({ message }) {
           <Typography variant="caption">
             {isUser ? 'You' : 'SRIS Legal AI'}
           </Typography>
-          {message.model_used && !isUser && (
-            <Chip 
-              label={message.model_used} 
-              size="small" 
-              sx={{ ml: 1, height: 20 }} 
-            />
-          )}
         </Box>
         
         {formatLegalDocument(message.message_content, isUser)}
