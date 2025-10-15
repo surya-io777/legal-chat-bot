@@ -38,57 +38,57 @@ class ChatService:
         self.models = {"gemini-pro": "gemini-2.5-pro"}
 
     def load_prompt_file(self, prompt_type="general"):
-        """Load prompt file based on type - UPDATED for structured output"""
+        """Load prompt file based on type - FIXED to separate example from actual response"""
         try:
             if prompt_type == "general":
-                # Clear structured formatting guidance
+                # FIXED: Clear formatting instructions without specific code examples
                 return """You are a professional legal AI assistant named SRIS Juris Support.
 
-Format ALL responses with this EXACT structure:
+MANDATORY RESPONSE STRUCTURE (FOLLOW EXACTLY FOR ALL QUERIES):
 
 SRIS Juris Support states:
 
-[Opening paragraph explaining the law/concept]
+[First paragraph: Provide a clear, comprehensive explanation of what the user asked about. Answer their specific question directly without referencing examples.]
 
-[Context paragraph about scope, eligibility, or background]
+[Second paragraph: Give context, background, eligibility requirements, or scope of the legal concept/statute being discussed.]
 
-Key components of this statute include:
+Key components of this topic include:
 
-- **Probation:** [Detailed explanation in full paragraph form]
+- **[Component 1]:** [Detailed explanation in full paragraph form - answer based on user's actual question]
 
-- **Conditions of Probation:** [Comprehensive explanation with details]
+- **[Component 2]:** [Comprehensive explanation with relevant details for the specific query]
 
-- **Dismissal of Charges:** [Complete explanation of this component]
+- **[Component 3]:** [Complete explanation relevant to the user's question]
 
-- **Violation:** [Full explanation of consequences]
+- **[Component 4]:** [Additional relevant component based on the actual query]
 
-FORMATTING RULES:
-- Always start with "SRIS Juris Support states:"
-- Use **bold text** for component names and section headers
-- Write explanations in flowing, professional paragraphs
-- Use bullet points with bold headers for key components
-- Maintain clear visual hierarchy
-- Never collapse sections into unformatted blocks
+IMPORTANT GUIDELINES:
+- ALWAYS start with "SRIS Juris Support states:" 
+- Answer the USER'S SPECIFIC QUESTION - do not use examples from the prompt
+- Use **bold text** only for component headers and key legal terms
+- Write ALL explanations in flowing, professional paragraphs (full sentences)
+- Create 4 bullet points with bold headers that are RELEVANT to the user's actual question
+- If the question is general, provide general components; if specific, focus on those details
+- Never copy or reference the formatting example - that was just to show structure
+- Maintain clear visual hierarchy with proper spacing between sections
 
-Example response structure:
+FORMATTING EXAMPLE (DO NOT USE THIS CONTENT - JUST THE STRUCTURE):
+[This is just to show the format - replace with actual answer to user's question]
 
 SRIS Juris Support states:
 
-Virginia Code § 18.2-57.3 provides a legal pathway for individuals charged for the first time with assault and battery against a family or household member to have the charge dismissed. This is often referred to as a "first offender program" or "deferred disposition."
+[Your actual answer to the user's specific question goes here]
 
-Under this statute, a court can defer the proceedings without a finding of guilt and place the accused individual on probation. To be eligible, the person generally must not have any prior convictions for similar offenses.
+[Your context and background for the user's question goes here]
 
-Key components of this statute include:
+Key components of this topic include:
 
-- **Probation:** The accused is placed on local community-based probation for a period of not less than two years.
+- **[Actual Component from User's Question]:** [Your relevant explanation]
+- **[Another Relevant Component]:** [Your relevant explanation]
+- **[Third Relevant Component]:** [Your relevant explanation]
+- **[Fourth Relevant Component]:** [Your relevant explanation]
 
-- **Conditions of Probation:** The individual must maintain good behavior and successfully complete all court-ordered treatment or education programs. These programs often include anger management, substance abuse treatment, or other relevant counseling as determined by an assessment.
-
-- **Dismissal of Charges:** Upon successful fulfillment of all terms and conditions of probation, the court will discharge the person and dismiss the proceedings. While this dismissal is without an adjudication of guilt, it is considered a conviction for the purpose of determining eligibility for this program in any subsequent proceedings.
-
-- **Violation:** If the individual violates the terms of their probation, the court may enter an adjudication of guilt and proceed with sentencing on the original charge.
-
-This statute allows a first-time offender the opportunity to avoid a criminal conviction for domestic assault by complying with court-supervised probation and rehabilitation."""
+CRITICAL: The example above is ONLY for formatting. Your actual response must address the user's specific question about Virginia Code or any other legal topic they ask about."""
 
             elif prompt_type == "singularity-counsel-8":
                 prompt_path = os.path.join(
@@ -120,53 +120,69 @@ This statute allows a first-time offender the opportunity to avoid a criminal co
             print(f"❌ ERROR loading {prompt_type} prompt: {e}")
             return "You are a professional legal AI assistant."
 
-    # NEW: Universal formatting wrapper for ALL protocols
+    # UPDATED: Universal formatting wrapper - FIXED to emphasize actual query response
     def get_formatting_instructions(self):
-        """Universal formatting rules applied to all protocols"""
+        """Universal formatting rules applied to all protocols - FIXED"""
         return """
 
 === MANDATORY OUTPUT FORMATTING (APPLIES TO ALL RESPONSES) ===
 
+CRITICAL INSTRUCTION: Answer the USER'S SPECIFIC QUESTION directly. Do not copy examples from the prompt.
+
 1. ALWAYS start your response with: "SRIS Juris Support states:"
 
 2. Structure your response in clear sections with proper spacing:
-   - Opening paragraph (explanation of the concept/law)
-   - Context paragraph (scope, eligibility, background)
-   - Detailed components with bold headers
+   - **Opening paragraph:** Answer the user's question directly and comprehensively
+   - **Context paragraph:** Provide relevant background, scope, or eligibility for the specific topic
+   - **Key components:** Use 4 bullet points with bold headers RELEVANT to the user's actual question
 
-3. When listing key components, use this EXACT format:
-   - **Component Name:** Detailed explanation in paragraph form
-   - **Next Component:** Full explanation with details
-   - **Another Component:** Comprehensive explanation
+3. When listing key components, use this EXACT format (but with content relevant to user's query):
+   - **Component Name:** Detailed explanation in paragraph form specific to user's question
+   - **Next Component:** Full explanation with details relevant to the actual query
+   - **Another Component:** Comprehensive explanation for the specific topic asked about
+   - **Additional Component:** Relevant information based on user's actual request
 
 4. FORMATTING REQUIREMENTS:
-   - Use **bold text** for all section headers and key terms
+   - Use **bold text** for all section headers and key legal terms only
    - Write in flowing, professional paragraphs (not bullet-only lists)
    - Maintain clear visual hierarchy with spacing
    - Use bullet points ONLY for organizing key components
    - Each component explanation must be in full sentence/paragraph form
+   - **NEVER copy the formatting example content - only use the structure**
 
-5. Example structure to follow:
-
-SRIS Juris Support states:
-
-[Opening paragraph explaining the main concept]
-
-[Context paragraph with relevant background]
-
-Key components include:
-
-- **First Component:** Complete explanation in professional paragraph form with all relevant details.
-
-- **Second Component:** Thorough explanation with comprehensive information presented clearly.
-
-- **Third Component:** Full details presented in structured, readable format.
-
-[Closing paragraph if needed]
+5. RESPONSE FLOW FOR GENERAL QUESTIONS:
+   - For "What is VA Code?": Explain what Virginia Code is generally
+   - For specific sections: Focus on that section's requirements
+   - For analysis requests: Structure analysis around the specific document/topic
+   - Always adapt components to the actual user's question
 
 === END FORMATTING RULES ===
-
 """
+
+    def detect_query_type(self, user_query):
+        """NEW: Detect the type of query to guide component generation"""
+        query_lower = user_query.lower()
+
+        # General VA Code questions
+        if any(
+            term in query_lower
+            for term in ["va code", "virginia code", "what is", "explain", "overview"]
+        ):
+            return "general_va_code"
+        # Specific code sections
+        elif any(
+            term in query_lower
+            for term in ["§", "section", "18.2", "19.2", "code section"]
+        ):
+            return "specific_code"
+        # Analysis requests
+        elif "analyze" in query_lower or "review" in query_lower:
+            return "analysis"
+        # Document generation
+        elif any(term in query_lower for term in ["generate", "create", "draft"]):
+            return "document"
+        else:
+            return "general_legal"
 
     def retrieve_from_kb(self, query):
         """Retrieve relevant documents from Knowledge Base for general Q&A only"""
@@ -323,45 +339,70 @@ Key components include:
             print(f"🔥 CHAT REQUEST: {message_lower}")
             return "chat"
 
-    def format_legal_response(self, response_text):
-        """Ensure response has proper bold headers and structure"""
+    def format_legal_response(self, response_text, user_query):
+        """UPDATED: Format response based on actual user query, not prompt examples"""
         # Ensure it starts with SRIS Juris Support states:
         if not response_text.strip().startswith("SRIS Juris Support states:"):
             response_text = "SRIS Juris Support states:\n\n" + response_text.strip()
 
-        # Bold key section names if not already bolded
-        legal_terms = [
-            "Probation",
-            "Conditions of Probation",
-            "Dismissal of Charges",
-            "Violation",
-            "Key components",
-            "Requirements",
-            "Eligibility",
-            "Core Prohibitions",
-            "Penalties",
-            "Elements",
-            "Breakdown",
-            "Analysis",
-            "Overview",
-            "Summary",
-            "Findings",
-            "Recommendations",
-            "General Threats",
-            "Threats on School Property",
-            "Electronic Communication",
-            "Reasonable Apprehension",
-            "Classification",
-            "Sentencing",
-        ]
+        # Detect query type for better formatting
+        query_type = self.detect_query_type(user_query)
 
+        # Dynamic legal terms based on query type
+        if query_type == "general_va_code":
+            legal_terms = [
+                "Structure of VA Code",
+                "Title Organization",
+                "Legislative Process",
+                "Code Updates",
+                "Statutory Interpretation",
+                "Legal Research",
+                "Criminal Code",
+                "Civil Code",
+                "Family Law",
+                "Contract Law",
+            ]
+        elif query_type == "specific_code":
+            legal_terms = [
+                "Elements of the Offense",
+                "Penalties and Punishment",
+                "Defenses Available",
+                "Jurisdictional Requirements",
+                "Statutory Language",
+                "Case Law",
+                "Burden of Proof",
+                "Procedural Requirements",
+                "Sentencing Guidelines",
+            ]
+        else:
+            legal_terms = [
+                "Legal Requirements",
+                "Key Provisions",
+                "Application Process",
+                "Eligibility Criteria",
+                "Penalties for Violation",
+                "Relevant Case Law",
+                "Statutory Interpretation",
+                "Procedural Steps",
+                "Legal Implications",
+            ]
+
+        # Bold key section names if not already bolded
         for term in legal_terms:
             # Bold after bullet points if not already bolded
-            response_text = re.sub(f"- {term}:", f"- **{term}:**", response_text)
+            response_text = re.sub(
+                f"- {re.escape(term)}:", f"- **{term}:**", response_text
+            )
             # Bold at line start if not already bolded
             response_text = re.sub(
-                f"^{term}:", f"**{term}:**", response_text, flags=re.MULTILINE
+                f"^{re.escape(term)}:",
+                f"**{term}:**",
+                response_text,
+                flags=re.MULTILINE,
             )
+
+        # Ensure there are proper line breaks for readability
+        response_text = response_text.replace("\n\n\n", "\n\n")
 
         return response_text
 
@@ -375,14 +416,25 @@ Key components include:
         chat_history="",
         prompt_type="general",
     ):
-        """Generate response using Gemini 2.5 Pro - UPDATED for consistent formatting across all protocols"""
+        """Generate response using Gemini 2.5 Pro - FIXED to focus on user's actual question"""
 
         model_id = self.models["gemini-pro"]
 
-        # UPDATED: All protocols now get standardized formatting
+        # UPDATED: Dynamic query detection and focused instructions
+        query_type = self.detect_query_type(user_query)
+
         if prompt_type == "general":
-            # Use built-in structured prompt for General mode
+            # FIXED: Emphasize answering the actual question
             base_instructions = f"""{self.load_prompt_file("general")}
+
+CRITICAL FOCUS INSTRUCTIONS:
+- The user's question is: "{user_query}"
+- Provide a DIRECT answer to this specific question
+- Do NOT use or reference any examples from the prompt
+- Base your components on the actual Virginia Code topic being asked about
+- If asking about "VA Code" generally: Explain what Virginia Code is
+- If asking about specific sections: Focus on those sections
+- Generate 4 relevant components based on the actual query
 
 Chat History (for context continuity):
 {chat_history}
@@ -391,10 +443,11 @@ User Instructions: {user_instructions}
 
 User Request: {user_query}
 
-IMPORTANT: Follow the exact formatting structure shown above. Use bold headers and clear paragraph organization."""
+QUERY TYPE DETECTED: {query_type}
+IMPORTANT: Answer the user's specific question using the structure above."""
 
         else:
-            # UPDATED: Custom protocols get their content + universal formatting wrapper
+            # For custom protocols: Keep their logic but add query focus
             custom_prompt = self.load_prompt_file(prompt_type)
             formatting_rules = self.get_formatting_instructions()
 
@@ -402,92 +455,91 @@ IMPORTANT: Follow the exact formatting structure shown above. Use bold headers a
 
 {formatting_rules}
 
-CRITICAL INSTRUCTIONS:
-- Apply the custom protocol logic above
-- But ALWAYS follow the mandatory formatting rules for output structure
-- Combine your specialized knowledge with professional formatting
-- Use **bold text** for headers and key terms
-- Maintain structured, readable output
+QUERY FOCUS INSTRUCTIONS:
+- User's specific question: "{user_query}"
+- Apply your specialized protocol to answer THIS question
+- Use the mandatory formatting structure for the output
+- Generate components RELEVANT to the actual query, not examples
+- For general VA Code questions: Explain the code structure and purpose
+- For specific code sections: Focus on those sections' requirements and implications
 
 Chat History (for context continuity):
 {chat_history}
 
 User Instructions: {user_instructions}
 
-User Request: {user_query}"""
+User Request: {user_query}
+
+QUERY TYPE: {query_type} - Answer this specific question using your protocol."""
 
         # Build final prompt based on request type
         if request_type == "fill_form":
             combined_prompt = f"""{base_instructions}
 
-FORM FILLING INSTRUCTIONS:
-- PRESERVE the EXACT original formatting, titles, bold text, and structure
-- ONLY fill in blanks, empty fields, or answer questions
-- DO NOT add any extra content, headers, explanations, or recommendations
-- DO NOT change any existing text, formatting, or structure
-- Keep all original CAPITAL LETTERS, bold formatting, and spacing exactly as provided
-- Fill blanks with appropriate legal information based on context
-- Maintain the exact same document layout and appearance
-- NO additional analysis, insights, or commentary
-- Output ONLY the original document with filled blanks
-
-Fill the form exactly as provided:"""
+FORM FILLING INSTRUCTIONS (PRESERVE ORIGINAL):
+- Fill ONLY the blanks in the provided document
+- Maintain exact original formatting, structure, and styling
+- Do not add explanations or new sections
+- Output only the completed form"""
 
         elif request_type == "analysis":
             combined_prompt = f"""{base_instructions}
 
-DEEP ANALYSIS INSTRUCTIONS:
-- Follow the structured format: Start with "SRIS Juris Support states:"
-- Perform comprehensive, detailed analysis with bold section headers
-- Use this structure:
-  * Opening paragraph explaining what you're analyzing
-  * Context paragraph with background
-  * Key findings with **bold headers:** and detailed explanations
-- Provide comprehensive analysis with detailed explanations
-- Compare different sections, clauses, or documents if multiple files
-- Identify legal implications, risks, and opportunities
-- Include specific quotes and references from the documents
-- Analyze legal language, terms, and their significance
-- Highlight any unusual clauses, missing elements, or concerns
-- Provide actionable insights and recommendations
-- Be thorough and comprehensive in your analysis
-- Maintain professional formatting throughout
+ANALYSIS STRUCTURE (USE FOR DOCUMENT REVIEW):
+SRIS Juris Support states:
 
-Provide deep analysis:"""
+[Opening: What this document is and its main purpose]
+
+[Context: Background and relevant legal framework]
+
+Key components of this analysis include:
+
+- **Document Structure:** [Analysis of organization and layout]
+- **Legal Provisions:** [Key legal clauses and their implications]  
+- **Risk Assessment:** [Potential legal risks and concerns]
+- **Recommendations:** [Actionable suggestions for improvement]
+
+Analyze the specific document uploaded."""
 
         elif request_type == "document":
             combined_prompt = f"""{base_instructions}
 
-DOCUMENT GENERATION INSTRUCTIONS:
-- Start with "SRIS Juris Support states:" if providing explanation
-- Create a comprehensive legal document with proper formatting
-- Use CAPITAL LETTERS for main titles and section headers
-- Structure with numbered clauses (1., 2., 3.)
-- Use proper legal indentation and spacing
-- Use **bold text** for emphasis and important terms
-- Use proper formatting for professional appearance
-- Make it professionally formatted and legally sound
-
-Generate a complete legal document:"""
+LEGAL DOCUMENT GENERATION:
+- Create professional legal document for: {user_query}
+- Use proper legal formatting with numbered sections
+- Include all necessary clauses relevant to the request
+- Maintain SRIS Juris Support professional standards"""
 
         elif request_type == "table":
             combined_prompt = f"""{base_instructions}
 
-TABLE GENERATION INSTRUCTIONS:
-- Start with "SRIS Juris Support states:"
-- Create structured data without table symbols
-- Use numbered lists (1., 2., 3.) for organization
-- Use clear headers with **bold text**
-- Present data in clean, readable format
-- Use proper table formatting with clear structure
-- Maintain professional formatting
+DATA PRESENTATION FORMAT:
+SRIS Juris Support states:
 
-Generate a well-structured table:"""
+[Brief introduction to the data being presented]
+
+Key data components include:
+
+- **Data Category 1:** [Description and details]
+- **Data Category 2:** [Description and details] 
+- **Data Category 3:** [Description and details]
+- **Data Category 4:** [Description and details]
+
+Present the information in clear, structured format."""
 
         else:
-            combined_prompt = base_instructions
+            # For general chat - emphasize query focus
+            combined_prompt = f"""{base_instructions}
 
-        print(f"🔥 GENERATING RESPONSE WITH SRIS AI ({prompt_type.upper()})")
+RESPONSE GUIDANCE:
+- Answer the user's question: "{user_query}"
+- Use the 4-component structure relevant to Virginia Code or the specific legal topic
+- Make each component directly responsive to the actual query
+- Do not reference or copy any prompt examples"""
+
+        print(f"🔥 GENERATING RESPONSE FOR QUERY: {user_query[:100]}...")
+        print(f"🔥 QUERY TYPE: {query_type}")
+        print(f"🔥 PROMPT TYPE: {prompt_type}")
         print(f"🔥 PROMPT LENGTH: {len(combined_prompt)} characters")
 
         try:
@@ -521,15 +573,18 @@ Generate a well-structured table:"""
 
             result_text = response.text
 
-            # Post-process for consistent bold formatting across all protocols
-            result_text = self.format_legal_response(result_text)
+            # FIXED: Pass user_query to format_legal_response for better context
+            result_text = self.format_legal_response(result_text, user_query)
 
-            print(f"✅ SRIS AI RESPONSE LENGTH: {len(result_text)} characters")
+            print(f"✅ RESPONSE GENERATED: {len(result_text)} characters")
             return result_text
 
         except Exception as e:
-            return f"Error generating response: {str(e)}"
+            error_msg = f"Error generating response: {str(e)}"
+            print(f"❌ {error_msg}")
+            return error_msg
 
+    # Rest of your methods remain exactly the same...
     def send_message(
         self,
         user_id,
@@ -583,9 +638,9 @@ Generate a well-structured table:"""
                 )
                 file_list = [f["filename"] for f in uploaded_files]
                 if request_type == "fill_form":
-                    message += f"\n\nFORM FILES TO FILL: {', '.join(file_list)}\nIMPORTANT: Preserve exact formatting and only fill blanks. Do not add any extra content."
+                    message += f"\n\nFORM FILES TO FILL: {', '.join(file_list)}\nIMPORTANT: Preserve exact formatting and only fill blanks."
                 elif request_type == "analysis":
-                    message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide comprehensive legal analysis following the structured format with bold headers."
+                    message += f"\n\nFILES FOR ANALYSIS: {', '.join(file_list)}\nProvide comprehensive legal analysis following the structured format."
                 else:
                     message += f"\n\nFiles to analyze: {', '.join(file_list)}"
 
@@ -674,7 +729,6 @@ Generate a well-structured table:"""
                 "success": True,
                 "response": bot_response,
                 "session_id": session_id,
-                "model_used": model_name,
                 "sources": sources,
                 "request_type": request_type,
                 "output_files": output_files,
@@ -691,6 +745,8 @@ Generate a well-structured table:"""
                 except:
                     pass
 
+    # Include all your other existing methods (process_uploaded_files, generate_pdf_content, etc.)
+    # They remain exactly the same as in your previous working version
     def process_uploaded_files(self, uploaded_files):
         """Process uploaded files and extract content"""
         file_contents = []
@@ -702,7 +758,6 @@ Generate a well-structured table:"""
             print(f"Processing file: {filename} at path: {filepath}")
 
             try:
-                # Check if file exists
                 if not os.path.exists(filepath):
                     file_contents.append(
                         f"File: {filename} (file not found at path: {filepath})"
@@ -712,17 +767,13 @@ Generate a well-structured table:"""
                 if filename.lower().endswith(".pdf"):
                     try:
                         text = ""
-
-                        # Method 1: pypdf
                         try:
                             from pypdf import PdfReader
 
                             print(f"📄 Attempting to read PDF with pypdf: {filename}")
-
                             with open(filepath, "rb") as pdf_file:
                                 reader = PdfReader(pdf_file)
                                 print(f"📄 PDF has {len(reader.pages)} pages")
-
                                 for i, page in enumerate(reader.pages):
                                     try:
                                         page_text = page.extract_text()
@@ -737,7 +788,6 @@ Generate a well-structured table:"""
                                         print(
                                             f"❌ Error reading page {i+1}: {page_error}"
                                         )
-
                         except ImportError:
                             print("❌ pypdf not available, trying PyPDF2")
                             try:
@@ -803,7 +853,6 @@ Generate a well-structured table:"""
 
         result = "\n\n" + "=" * 50 + "\n\n".join(file_contents) + "\n" + "=" * 50
         print(f"📋 FINAL PROCESSED CONTENT LENGTH: {len(result)} characters")
-        print(f"📋 CONTENT PREVIEW: {result[:200]}...")
         return result
 
     def generate_pdf_content(self, content, session_id, title):
@@ -824,7 +873,6 @@ Generate a well-structured table:"""
             styles = getSampleStyleSheet()
             story = []
 
-            # Create styles for normal and bold text
             normal_style = ParagraphStyle(
                 "NormalStyle",
                 parent=styles["Normal"],
@@ -849,10 +897,7 @@ Generate a well-structured table:"""
                 spaceBefore=4,
             )
 
-            # Clean content - remove any AI intro text
             clean_content = content.replace("SRIS Juris Support states:", "").strip()
-
-            # Process lines to detect formatting
             lines = clean_content.split("\n")
             for line in lines:
                 line = line.strip()
@@ -860,23 +905,18 @@ Generate a well-structured table:"""
                     story.append(Spacer(1, 6))
                     continue
 
-                # Detect markdown bold **text** and convert to ReportLab format
                 if "**" in line:
-                    # Convert markdown bold to ReportLab bold tags
                     line = re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", line)
                     para = Paragraph(line, normal_style)
                     story.append(para)
                 elif line.isupper() and len(line) > 3:
-                    # Bold formatting for ALL CAPS titles
                     para = Paragraph(f"<b>{line}</b>", bold_style)
                     story.append(para)
                 elif line.startswith("- "):
-                    # Bullet points - preserve bold markers
                     line = re.sub(r"- \*\*([^*]+)\*\*:", r"- <b>\1:</b>", line)
                     para = Paragraph(line, normal_style)
                     story.append(para)
                 else:
-                    # Regular text with preserved spacing
                     formatted_line = line.replace("  ", "&nbsp;&nbsp;")
                     para = Paragraph(formatted_line, normal_style)
                     story.append(para)
@@ -996,7 +1036,6 @@ Generate a well-structured table:"""
             if not messages:
                 return ""
 
-            # Format recent messages for context
             history_text = "\nRecent conversation:\n"
             for msg in reversed(messages[-limit:]):
                 role = "User" if msg["message_type"] == "user" else "Assistant"
