@@ -41,7 +41,7 @@ class ChatService:
         """Load prompt file based on type - FIXED to separate example from actual response"""
         try:
             if prompt_type == "general":
-                # FIXED: Clear formatting instructions without specific code examples
+                # FIXED: Clear formatting instructions with explicit markdown structure for Gemini
                 return """You are a professional legal AI assistant named SRIS Juris Support.
 
 MANDATORY RESPONSE STRUCTURE (FOLLOW EXACTLY FOR ALL QUERIES):
@@ -54,13 +54,13 @@ SRIS Juris Support states:
 
 Key components of this topic include:
 
-- **[Component 1]:** [Detailed explanation in full paragraph form - answer based on user's actual question]
+- **Component 1:** [Detailed explanation in full paragraph form - answer based on user's actual question]
 
-- **[Component 2]:** [Comprehensive explanation with relevant details for the specific query]
+- **Component 2:** [Comprehensive explanation with relevant details for the specific query]
 
-- **[Component 3]:** [Complete explanation relevant to the user's question]
+- **Component 3:** [Complete explanation relevant to the user's question]
 
-- **[Component 4]:** [Additional relevant component based on the actual query]
+- **Component 4:** [Additional relevant component based on the actual query]
 
 IMPORTANT GUIDELINES:
 - ALWAYS start with "SRIS Juris Support states:" 
@@ -71,6 +71,7 @@ IMPORTANT GUIDELINES:
 - If the question is general, provide general components; if specific, focus on those details
 - Never copy or reference the formatting example - that was just to show structure
 - Maintain clear visual hierarchy with proper spacing between sections
+- Use **bold** markdown (**) for headers like **Key components of this topic include:** and component names
 
 FORMATTING EXAMPLE (DO NOT USE THIS CONTENT - JUST THE STRUCTURE):
 [This is just to show the format - replace with actual answer to user's question]
@@ -83,13 +84,12 @@ SRIS Juris Support states:
 
 Key components of this topic include:
 
-- **[Actual Component from User's Question]:** [Your relevant explanation]
-- **[Another Relevant Component]:** [Your relevant explanation]
-- **[Third Relevant Component]:** [Your relevant explanation]
-- **[Fourth Relevant Component]:** [Your relevant explanation]
+- **Actual Component from User's Question:** [Your relevant explanation]
+- **Another Relevant Component:** [Your relevant explanation]
+- **Third Relevant Component:** [Your relevant explanation]
+- **Fourth Relevant Component:** [Your relevant explanation]
 
 CRITICAL: The example above is ONLY for formatting. Your actual response must address the user's specific question about Virginia Code or any other legal topic they ask about."""
-
             elif prompt_type == "singularity-counsel-8":
                 prompt_path = os.path.join(
                     os.path.dirname(__file__), "Singularity-Counsel-protocol8.0.txt"
@@ -340,69 +340,31 @@ CRITICAL INSTRUCTION: Answer the USER'S SPECIFIC QUESTION directly. Do not copy 
             return "chat"
 
     def format_legal_response(self, response_text, user_query):
-        """UPDATED: Format response based on actual user query, not prompt examples"""
-        # Ensure it starts with SRIS Juris Support states:
+        """CORRECTED: Minimal post-processing to preserve Gemini's natural markdown structure"""
+        # Ensure it starts with the exact header if missing
         if not response_text.strip().startswith("SRIS Juris Support states:"):
             response_text = "SRIS Juris Support states:\n\n" + response_text.strip()
 
-        # Detect query type for better formatting
-        query_type = self.detect_query_type(user_query)
+        # Ensure the key components header exists and is bolded if needed
+        if "Key components of this topic include:" not in response_text:
+            # Insert it after the second paragraph if structure is broken
+            paragraphs = re.split(r"\n\s*\n", response_text.strip())
+            if len(paragraphs) >= 2:
+                response_text = (
+                    paragraphs[0]
+                    + "\n\n"
+                    + paragraphs[1]
+                    + "\n\n**Key components of this topic include:**\n\n"
+                    + "\n\n".join(paragraphs[2:])
+                )
 
-        # Dynamic legal terms based on query type
-        if query_type == "general_va_code":
-            legal_terms = [
-                "Structure of VA Code",
-                "Title Organization",
-                "Legislative Process",
-                "Code Updates",
-                "Statutory Interpretation",
-                "Legal Research",
-                "Criminal Code",
-                "Civil Code",
-                "Family Law",
-                "Contract Law",
-            ]
-        elif query_type == "specific_code":
-            legal_terms = [
-                "Elements of the Offense",
-                "Penalties and Punishment",
-                "Defenses Available",
-                "Jurisdictional Requirements",
-                "Statutory Language",
-                "Case Law",
-                "Burden of Proof",
-                "Procedural Requirements",
-                "Sentencing Guidelines",
-            ]
-        else:
-            legal_terms = [
-                "Legal Requirements",
-                "Key Provisions",
-                "Application Process",
-                "Eligibility Criteria",
-                "Penalties for Violation",
-                "Relevant Case Law",
-                "Statutory Interpretation",
-                "Procedural Steps",
-                "Legal Implications",
-            ]
+        # Clean up excessive newlines but preserve spacing
+        response_text = re.sub(r"\n{3,}", "\n\n", response_text)
 
-        # Bold key section names if not already bolded
-        for term in legal_terms:
-            # Bold after bullet points if not already bolded
-            response_text = re.sub(
-                f"- {re.escape(term)}:", f"- **{term}:**", response_text
-            )
-            # Bold at line start if not already bolded
-            response_text = re.sub(
-                f"^{re.escape(term)}:",
-                f"**{term}:**",
-                response_text,
-                flags=re.MULTILINE,
-            )
-
-        # Ensure there are proper line breaks for readability
-        response_text = response_text.replace("\n\n\n", "\n\n")
+        # Ensure bullet points start with - ** if they don't already have proper bolding
+        response_text = re.sub(
+            r"^- ([^*]+):(?=\s|$)", r"- **\1:**", response_text, flags=re.MULTILINE
+        )
 
         return response_text
 
@@ -435,6 +397,7 @@ CRITICAL FOCUS INSTRUCTIONS:
 - If asking about "VA Code" generally: Explain what Virginia Code is
 - If asking about specific sections: Focus on those sections
 - Generate 4 relevant components based on the actual query
+- Use **bold** markdown for component headers like **Component Name:**
 
 Chat History (for context continuity):
 {chat_history}
@@ -462,6 +425,7 @@ QUERY FOCUS INSTRUCTIONS:
 - Generate components RELEVANT to the actual query, not examples
 - For general VA Code questions: Explain the code structure and purpose
 - For specific code sections: Focus on those sections' requirements and implications
+- Use **bold** markdown for headers and components
 
 Chat History (for context continuity):
 {chat_history}
@@ -492,7 +456,7 @@ SRIS Juris Support states:
 
 [Context: Background and relevant legal framework]
 
-Key components of this analysis include:
+**Key components of this analysis include:**
 
 - **Document Structure:** [Analysis of organization and layout]
 - **Legal Provisions:** [Key legal clauses and their implications]  
@@ -518,7 +482,7 @@ SRIS Juris Support states:
 
 [Brief introduction to the data being presented]
 
-Key data components include:
+**Key data components include:**
 
 - **Data Category 1:** [Description and details]
 - **Data Category 2:** [Description and details] 
@@ -535,7 +499,8 @@ RESPONSE GUIDANCE:
 - Answer the user's question: "{user_query}"
 - Use the 4-component structure relevant to Virginia Code or the specific legal topic
 - Make each component directly responsive to the actual query
-- Do not reference or copy any prompt examples"""
+- Do not reference or copy any prompt examples
+- Use **bold** markdown for all headers like **Key components of this topic include:** and component names"""
 
         print(f"🔥 GENERATING RESPONSE FOR QUERY: {user_query[:100]}...")
         print(f"🔥 QUERY TYPE: {query_type}")
@@ -584,7 +549,7 @@ RESPONSE GUIDANCE:
             print(f"❌ {error_msg}")
             return error_msg
 
-    # Rest of your methods remain exactly the same...
+    # Rest of your methods remain exactly the same
     def send_message(
         self,
         user_id,
@@ -851,7 +816,9 @@ RESPONSE GUIDANCE:
                 print(f"General error processing {filename}: {e}")
                 file_contents.append(f"File: {filename} (error reading: {str(e)})")
 
-        result = "\n\n" + "=" * 50 + "\n\n".join(file_contents) + "\n" + "=" * 50
+        result = (
+            "\n\n" + "=" * 50 + "\n\n" + "\n\n".join(file_contents) + "\n" + "=" * 50
+        )
         print(f"📋 FINAL PROCESSED CONTENT LENGTH: {len(result)} characters")
         return result
 
